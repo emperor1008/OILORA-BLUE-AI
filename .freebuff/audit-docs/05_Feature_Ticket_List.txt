@@ -1,0 +1,635 @@
+===== 05_Feature_Ticket_List (source: 05_SamudraTrace_AI_Feature_Ticket_List.docx) =====
+
+SIH26143  |  PRE-BUILD SPECIFICATION
+Feature Ticket List
+Ordered, buildable tickets with acceptance criteria, dependencies and AI-ready prompts
+[TABLE]
+PROJECT
+SamudraTrace AI — Sentinel-1 oil-spill detection, bidirectional drift reconstruction and explainable AIS vessel attribution for Smart India Hackathon 2026.
+
+Prepared for a CSE Core + AI/ML team  |  Zero-cost MVP  |  Version 1.0
+
+1. How to use this document
+Build tickets in the listed order. Give one ticket at a time to FreeBuff or another coding tool. Require it to inspect the repository, preserve existing behaviour, implement only the ticket scope, run the stated tests and report changed files. Must-have tickets define the demo MVP; should-have and nice-to-have tickets cannot delay it.
+[TABLE]
+GLOBAL CODING RULE
+No dummy success paths. Mock data is allowed only behind an explicit demo fixture and must match the real API contract. Never hide failed scientific processing by returning fabricated results.
+
+2. Ordered ticket index
+[TABLE]
+ID
+Feature
+Priority
+Depends on
+T01
+Repository and quality baseline
+Must-have
+None
+T02
+Shared case/API contract
+Must-have
+T01
+T03
+FreeBuff application shell
+Must-have
+T02
+T04
+Case persistence
+Must-have
+T02
+T05
+Secure file registration
+Must-have
+T04
+T06
+SAR metadata validation
+Must-have
+T05
+T07
+SAR preprocessing and tiling
+Must-have
+T06
+T08
+Dataset split and data card
+Must-have
+T07
+T09
+Tile classifier baseline
+Must-have
+T08
+T10
+U-Net segmentation baseline
+Must-have
+T08
+T11
+ONNX inference service
+Must-have
+T09,T10
+T12
+Mask post-processing and geometry
+Must-have
+T11
+T13
+Detection review UI
+Must-have
+T03,T12
+T14
+Environmental data adapter
+Must-have
+T05
+T15
+Backward drift ensemble
+Must-have
+T12,T14
+T16
+Forward drift ensemble
+Must-have
+T14,T15
+T17
+Drift Lab UI
+Must-have
+T03,T15,T16
+T18
+AIS ingestion and quality report
+Must-have
+T05
+T19
+Trajectory reconstruction
+Must-have
+T18
+T20
+Candidate spatial-temporal filter
+Must-have
+T15,T19
+T21
+Explainable candidate scoring
+Must-have
+T20
+T22
+Vessel intelligence UI
+Must-have
+T03,T21
+T23
+Evidence manifest and audit export
+Must-have
+T04,T12,T16,T21
+T24
+Human-readable report
+Must-have
+T23
+T25
+End-to-end case orchestration
+Must-have
+T04,T11,T15,T18,T21,T23
+T26
+Offline prepared demo case
+Must-have
+T25
+T27
+Golden-case regression suite
+Must-have
+T26
+T28
+Performance and failure hardening
+Must-have
+T27
+T29
+Accessibility and responsive audit
+Should-have
+T22,T24
+T30
+Local analyst/reviewer accounts
+Should-have
+T04,T23
+T31
+Advanced detection experiment
+Nice-to-have
+T10,T27
+T32
+Demo rehearsal package
+Must-have
+T28,T29
+
+T01 — Repository and quality baseline
+Priority: Must-have  |  Dependencies: None
+Create /frontend, /backend, /data/sample_case, /models, /tests and /docs. Add README, format/lint/test scripts and environment examples.
+Acceptance criteria
+Repository installs cleanly.
+frontend and backend health checks run.
+no secret committed.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T01: Repository and quality baseline. Scope: Create /frontend, /backend, /data/sample_case, /models, /tests and /docs. Add README, format/lint/test scripts and environment examples. Dependencies already completed: None. Completion requirements: Repository installs cleanly; frontend and backend health checks run; no secret committed. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T02 — Shared case/API contract
+Priority: Must-have  |  Dependencies: T01
+Define Pydantic models, OpenAPI routes and matching TypeScript types for Case, Job, Detection, DriftRun, AisQuality, Candidate and Artifact.
+Acceptance criteria
+Schemas serialize round-trip.
+invalid payloads fail.
+frontend compiles against types.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T02: Shared case/API contract. Scope: Define Pydantic models, OpenAPI routes and matching TypeScript types for Case, Job, Detection, DriftRun, AisQuality, Candidate and Artifact. Dependencies already completed: T01. Completion requirements: Schemas serialize round-trip; invalid payloads fail; frontend compiles against types. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T03 — FreeBuff application shell
+Priority: Must-have  |  Dependencies: T02
+Generate responsive navigation, dashboard, case route, stage rail, map placeholder, evidence drawer and theme tokens.
+Acceptance criteria
+Desktop/tablet/mobile layouts work.
+keyboard focus visible.
+no scientific logic in client.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T03: FreeBuff application shell. Scope: Generate responsive navigation, dashboard, case route, stage rail, map placeholder, evidence drawer and theme tokens. Dependencies already completed: T02. Completion requirements: Desktop/tablet/mobile layouts work; keyboard focus visible; no scientific logic in client. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T04 — Case persistence
+Priority: Must-have  |  Dependencies: T02
+Implement SQLite models and CRUD for cases, jobs, artifacts and audit events.
+Acceptance criteria
+Create/read/update draft case.
+unique IDs.
+timestamps UTC.
+audit event written.
+tests pass.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T04: Case persistence. Scope: Implement SQLite models and CRUD for cases, jobs, artifacts and audit events. Dependencies already completed: T02. Completion requirements: Create/read/update draft case; unique IDs; timestamps UTC; audit event written; tests pass. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T05 — Secure file registration
+Priority: Must-have  |  Dependencies: T04
+Implement streamed upload/registration with size, extension, magic/type, filename and path checks plus SHA-256.
+Acceptance criteria
+Traversal/corrupt/large tests fail safely.
+valid file stored under case root.
+hash returned.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T05: Secure file registration. Scope: Implement streamed upload/registration with size, extension, magic/type, filename and path checks plus SHA-256. Dependencies already completed: T04. Completion requirements: Traversal/corrupt/large tests fail safely; valid file stored under case root; hash returned. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T06 — SAR metadata validation
+Priority: Must-have  |  Dependencies: T05
+Read prepared GeoTIFF/COG and validate CRS, affine transform, band count, nodata, dimensions, acquisition time and polarization metadata.
+Acceptance criteria
+Valid sample accepted.
+missing CRS/time rejected with field errors.
+metadata persisted.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T06: SAR metadata validation. Scope: Read prepared GeoTIFF/COG and validate CRS, affine transform, band count, nodata, dimensions, acquisition time and polarization metadata. Dependencies already completed: T05. Completion requirements: Valid sample accepted; missing CRS/time rejected with field errors; metadata persisted. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T07 — SAR preprocessing and tiling
+Priority: Must-have  |  Dependencies: T06
+Implement dB conversion, clipping/normalization, optional restrained speckle filter, land/valid mask and overlapping tile index.
+Acceptance criteria
+Deterministic tiles map back to geospatial coordinates.
+configuration version recorded.
+unit tests pass.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T07: SAR preprocessing and tiling. Scope: Implement dB conversion, clipping/normalization, optional restrained speckle filter, land/valid mask and overlapping tile index. Dependencies already completed: T06. Completion requirements: Deterministic tiles map back to geospatial coordinates; configuration version recorded; unit tests pass. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T08 — Dataset split and data card
+Priority: Must-have  |  Dependencies: T07
+Create event/region-based train/validation/test split and document sources, licenses, labels, leakage prevention and limitations.
+Acceptance criteria
+No event crosses splits.
+manifest reproducible.
+data card committed.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T08: Dataset split and data card. Scope: Create event/region-based train/validation/test split and document sources, licenses, labels, leakage prevention and limitations. Dependencies already completed: T07. Completion requirements: No event crosses splits; manifest reproducible; data card committed. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T09 — Tile classifier baseline
+Priority: Must-have  |  Dependencies: T08
+Train MobileNetV3/EfficientNet-B0 for oil/look-alike/normal candidate classification using balanced sampling.
+Acceptance criteria
+Held-out per-class precision/recall/F1 and confusion matrix saved.
+checkpoint reproducible.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T09: Tile classifier baseline. Scope: Train MobileNetV3/EfficientNet-B0 for oil/look-alike/normal candidate classification using balanced sampling. Dependencies already completed: T08. Completion requirements: Held-out per-class precision/recall/F1 and confusion matrix saved; checkpoint reproducible. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T10 — U-Net segmentation baseline
+Priority: Must-have  |  Dependencies: T08
+Train lightweight U-Net with pretrained encoder using Dice + focal loss and conservative augmentation.
+Acceptance criteria
+Held-out IoU/Dice/precision/recall reported.
+visual overlays saved.
+no spatial leakage.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T10: U-Net segmentation baseline. Scope: Train lightweight U-Net with pretrained encoder using Dice + focal loss and conservative augmentation. Dependencies already completed: T08. Completion requirements: Held-out IoU/Dice/precision/recall reported; visual overlays saved; no spatial leakage. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T11 — ONNX inference service
+Priority: Must-have  |  Dependencies: T09,T10
+Export selected models and implement CPU inference with model/version/checksum validation.
+Acceptance criteria
+Same sample is within tolerance vs PyTorch.
+memory/latency measured on target laptop.
+API returns job result.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T11: ONNX inference service. Scope: Export selected models and implement CPU inference with model/version/checksum validation. Dependencies already completed: T09,T10. Completion requirements: Same sample is within tolerance vs PyTorch; memory/latency measured on target laptop; API returns job result. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T12 — Mask post-processing and geometry
+Priority: Must-have  |  Dependencies: T11
+Threshold, remove only documented small components, polygonize and compute projected area/perimeter/centroid/orientation/fragmentation.
+Acceptance criteria
+Known geometry tests pass.
+output GeoJSON WGS84.
+raw probability preserved.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T12: Mask post-processing and geometry. Scope: Threshold, remove only documented small components, polygonize and compute projected area/perimeter/centroid/orientation/fragmentation. Dependencies already completed: T11. Completion requirements: Known geometry tests pass; output GeoJSON WGS84; raw probability preserved. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T13 — Detection review UI
+Priority: Must-have  |  Dependencies: T03,T12
+Show raw SAR, probability, mask opacity, geometry, model info and accept/correct workflow.
+Acceptance criteria
+Analyst can accept or upload corrected polygon.
+review status and audit event persist.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T13: Detection review UI. Scope: Show raw SAR, probability, mask opacity, geometry, model info and accept/correct workflow. Dependencies already completed: T03,T12. Completion requirements: Analyst can accept or upload corrected polygon; review status and audit event persist. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T14 — Environmental data adapter
+Priority: Must-have  |  Dependencies: T05
+Load cached wind/current NetCDF, validate variables/units/time coverage and expose coverage summary.
+Acceptance criteria
+Prepared subset loads.
+missing variable/time produces safe actionable error.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T14: Environmental data adapter. Scope: Load cached wind/current NetCDF, validate variables/units/time coverage and expose coverage summary. Dependencies already completed: T05. Completion requirements: Prepared subset loads; missing variable/time produces safe actionable error. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T15 — Backward drift ensemble
+Priority: Must-have  |  Dependencies: T12,T14
+Wrap OpenDrift/OpenOil transport for backward scenarios with perturbed forcing, source position and release time.
+Acceptance criteria
+50/75/90% origin contours and time window generated.
+inputs/seed reproducible.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T15: Backward drift ensemble. Scope: Wrap OpenDrift/OpenOil transport for backward scenarios with perturbed forcing, source position and release time. Dependencies already completed: T12,T14. Completion requirements: 50/75/90% origin contours and time window generated; inputs/seed reproducible. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T16 — Forward drift ensemble
+Priority: Must-have  |  Dependencies: T14,T15
+Run forward transport and generate time-stepped contours and coastline-contact indicators where data allows.
+Acceptance criteria
+Map-ready GeoJSON/time series created.
+uncertainty visible.
+weathering limitations documented.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T16: Forward drift ensemble. Scope: Run forward transport and generate time-stepped contours and coastline-contact indicators where data allows. Dependencies already completed: T14,T15. Completion requirements: Map-ready GeoJSON/time series created; uncertainty visible; weathering limitations documented. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T17 — Drift Lab UI
+Priority: Must-have  |  Dependencies: T03,T15,T16
+Create backward/forward toggle, parameter summary, run state, legend, contours and common time slider.
+Acceptance criteria
+Particle/contour animation is pausable.
+failure/offline states work.
+run comparison is readable.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T17: Drift Lab UI. Scope: Create backward/forward toggle, parameter summary, run state, legend, contours and common time slider. Dependencies already completed: T03,T15,T16. Completion requirements: Particle/contour animation is pausable; failure/offline states work; run comparison is readable. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T18 — AIS ingestion and quality report
+Priority: Must-have  |  Dependencies: T05
+Map CSV/Parquet columns; normalize UTC/WGS84; remove duplicates; flag impossible coordinates/jumps and quantify gaps.
+Acceptance criteria
+Raw rows retained.
+quality counts and warnings returned.
+malformed inputs rejected.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T18: AIS ingestion and quality report. Scope: Map CSV/Parquet columns; normalize UTC/WGS84; remove duplicates; flag impossible coordinates/jumps and quantify gaps. Dependencies already completed: T05. Completion requirements: Raw rows retained; quality counts and warnings returned; malformed inputs rejected. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T19 — Trajectory reconstruction
+Priority: Must-have  |  Dependencies: T18
+Sort by MMSI/time, split long gaps, interpolate only short configured gaps and create track GeoJSON.
+Acceptance criteria
+Golden trajectories reproduce expected segments.
+interpolation is labelled.
+no silent deletion.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T19: Trajectory reconstruction. Scope: Sort by MMSI/time, split long gaps, interpolate only short configured gaps and create track GeoJSON. Dependencies already completed: T18. Completion requirements: Golden trajectories reproduce expected segments; interpolation is labelled; no silent deletion. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T20 — Candidate spatial-temporal filter
+Priority: Must-have  |  Dependencies: T15,T19
+Intersect reconstructed tracks with origin probability corridor and release window plus controlled buffers.
+Acceptance criteria
+Retained/excluded vessels include reasons.
+no-intersection returns empty credible result.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T20: Candidate spatial-temporal filter. Scope: Intersect reconstructed tracks with origin probability corridor and release window plus controlled buffers. Dependencies already completed: T15,T19. Completion requirements: Retained/excluded vessels include reasons; no-intersection returns empty credible result. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T21 — Explainable candidate scoring
+Priority: Must-have  |  Dependencies: T20
+Calculate source proximity, temporal alignment, trajectory similarity, AIS-gap quality, motion anomaly and vessel context with configurable weights.
+Acceptance criteria
+Component scores sum correctly.
+explanations name evidence and limitations.
+close scores show ambiguity.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T21: Explainable candidate scoring. Scope: Calculate source proximity, temporal alignment, trajectory similarity, AIS-gap quality, motion anomaly and vessel context with configurable weights. Dependencies already completed: T20. Completion requirements: Component scores sum correctly; explanations name evidence and limitations; close scores show ambiguity. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T22 — Vessel intelligence UI
+Priority: Must-have  |  Dependencies: T03,T21
+Build ranked candidate list, evidence bars, quality warning, selected track replay and explanation drawer.
+Acceptance criteria
+Selecting candidate highlights track/intersection.
+no label says guilty.
+mobile drawer works.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T22: Vessel intelligence UI. Scope: Build ranked candidate list, evidence bars, quality warning, selected track replay and explanation drawer. Dependencies already completed: T03,T21. Completion requirements: Selecting candidate highlights track/intersection; no label says guilty; mobile drawer works. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T23 — Evidence manifest and audit export
+Priority: Must-have  |  Dependencies: T04,T12,T16,T21
+Generate manifest with hashes, model/software versions, parameters, seeds, source metadata, transformations and review status.
+Acceptance criteria
+Tamper test fails verification.
+JSON/GeoJSON export deterministic.
+approved revision immutable.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T23: Evidence manifest and audit export. Scope: Generate manifest with hashes, model/software versions, parameters, seeds, source metadata, transformations and review status. Dependencies already completed: T04,T12,T16,T21. Completion requirements: Tamper test fails verification; JSON/GeoJSON export deterministic; approved revision immutable. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T24 — Human-readable report
+Priority: Must-have  |  Dependencies: T23
+Generate print-ready HTML and optional PDF view with summary, methods, maps, candidates, uncertainty and limitations.
+Acceptance criteria
+Report downloads.
+includes manifest checksum.
+never asserts legal guilt.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T24: Human-readable report. Scope: Generate print-ready HTML and optional PDF view with summary, methods, maps, candidates, uncertainty and limitations. Dependencies already completed: T23. Completion requirements: Report downloads; includes manifest checksum; never asserts legal guilt. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T25 — End-to-end case orchestration
+Priority: Must-have  |  Dependencies: T04,T11,T15,T18,T21,T23
+Add stage dependencies, idempotency, background jobs, progress, cancellation, retry and recovery after refresh.
+Acceptance criteria
+One button advances valid stage.
+duplicate submit does not duplicate run.
+failed job retry works.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T25: End-to-end case orchestration. Scope: Add stage dependencies, idempotency, background jobs, progress, cancellation, retry and recovery after refresh. Dependencies already completed: T04,T11,T15,T18,T21,T23. Completion requirements: One button advances valid stage; duplicate submit does not duplicate run; failed job retry works. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T26 — Offline prepared demo case
+Priority: Must-have  |  Dependencies: T25
+Package a legally usable regional SAR tile, environmental subset, AIS fixture, expected outputs and reset script.
+Acceptance criteria
+Exact judge path completes with Wi-Fi disabled.
+assets/checksums verified.
+reset is one click.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T26: Offline prepared demo case. Scope: Package a legally usable regional SAR tile, environmental subset, AIS fixture, expected outputs and reset script. Dependencies already completed: T25. Completion requirements: Exact judge path completes with Wi-Fi disabled; assets/checksums verified; reset is one click. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T27 — Golden-case regression suite
+Priority: Must-have  |  Dependencies: T26
+Add unit/API/integration/UI tests plus fixed expected summary ranges and hashes for prepared case.
+Acceptance criteria
+CI/local command passes.
+intentional algorithm/output drift is detected.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T27: Golden-case regression suite. Scope: Add unit/API/integration/UI tests plus fixed expected summary ranges and hashes for prepared case. Dependencies already completed: T26. Completion requirements: CI/local command passes; intentional algorithm/output drift is detected. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T28 — Performance and failure hardening
+Priority: Must-have  |  Dependencies: T27
+Profile CPU/RAM/disk; cap dimensions/ensemble size; add timeouts, low-disk checks and sanitized error handling.
+Acceptance criteria
+Prepared demo meets time budget on Ryzen 7/16 GB.
+no crash on tested bad input.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T28: Performance and failure hardening. Scope: Profile CPU/RAM/disk; cap dimensions/ensemble size; add timeouts, low-disk checks and sanitized error handling. Dependencies already completed: T27. Completion requirements: Prepared demo meets time budget on Ryzen 7/16 GB; no crash on tested bad input. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T29 — Accessibility and responsive audit
+Priority: Should-have  |  Dependencies: T22,T24
+Test keyboard path, contrast, focus, labels, reduced motion, mobile layout and textual map summaries.
+Acceptance criteria
+Critical accessibility checks pass at 360, 768 and 1440 px.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T29: Accessibility and responsive audit. Scope: Test keyboard path, contrast, focus, labels, reduced motion, mobile layout and textual map summaries. Dependencies already completed: T22,T24. Completion requirements: Critical accessibility checks pass at 360, 768 and 1440 px. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T30 — Local analyst/reviewer accounts
+Priority: Should-have  |  Dependencies: T04,T23
+Add credential auth, secure cookie, roles, case assignment and approval revision workflow.
+Acceptance criteria
+Permission matrix tests pass.
+approved evidence cannot be silently modified.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T30: Local analyst/reviewer accounts. Scope: Add credential auth, secure cookie, roles, case assignment and approval revision workflow. Dependencies already completed: T04,T23. Completion requirements: Permission matrix tests pass; approved evidence cannot be silently modified. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T31 — Advanced detection experiment
+Priority: Nice-to-have  |  Dependencies: T10,T27
+Evaluate attention U-Net/SegFormer or dual-polarization fusion only against frozen baseline.
+Acceptance criteria
+Adopt only with cross-region improvement and acceptable latency.
+otherwise document rejection.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T31: Advanced detection experiment. Scope: Evaluate attention U-Net/SegFormer or dual-polarization fusion only against frozen baseline. Dependencies already completed: T10,T27. Completion requirements: Adopt only with cross-region improvement and acceptable latency; otherwise document rejection. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+T32 — Demo rehearsal package
+Priority: Must-have  |  Dependencies: T28,T29
+Create eight-minute script, reset/check commands, readiness page and backup screen recording.
+Acceptance criteria
+Two consecutive offline rehearsals succeed and all judge questions have evidence-backed answers.
+AI coding prompt
+[TABLE]
+COPY INTO CODING TOOL
+Inspect the existing SamudraTrace AI repository before editing. Implement ticket T32: Demo rehearsal package. Scope: Create eight-minute script, reset/check commands, readiness page and backup screen recording. Dependencies already completed: T28,T29. Completion requirements: Two consecutive offline rehearsals succeed and all judge questions have evidence-backed answers. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+3. MVP completion rule
+[TABLE]
+FREEZE SCOPE
+Do not start nice-to-have research upgrades until T01-T28 and T32 pass. A complete modest detector connected to real drift, AIS reasoning and reproducible evidence is stronger than an advanced segmentation notebook without an operational chain.
+
+
+===== TABLE CONTENT =====
+PROJECT | SamudraTrace AI — Sentinel-1 oil-spill detection, bidirectional drift reconstruction and explainable AIS vessel attribution for Smart India Hackathon 2026.
+
+GLOBAL CODING RULE | No dummy success paths. Mock data is allowed only behind an explicit demo fixture and must match the real API contract. Never hide failed scientific processing by returning fabricated results.
+
+ID || Feature || Priority || Depends on
+T01 || Repository and quality baseline || Must-have || None
+T02 || Shared case/API contract || Must-have || T01
+T03 || FreeBuff application shell || Must-have || T02
+T04 || Case persistence || Must-have || T02
+T05 || Secure file registration || Must-have || T04
+T06 || SAR metadata validation || Must-have || T05
+T07 || SAR preprocessing and tiling || Must-have || T06
+T08 || Dataset split and data card || Must-have || T07
+T09 || Tile classifier baseline || Must-have || T08
+T10 || U-Net segmentation baseline || Must-have || T08
+T11 || ONNX inference service || Must-have || T09,T10
+T12 || Mask post-processing and geometry || Must-have || T11
+T13 || Detection review UI || Must-have || T03,T12
+T14 || Environmental data adapter || Must-have || T05
+T15 || Backward drift ensemble || Must-have || T12,T14
+T16 || Forward drift ensemble || Must-have || T14,T15
+T17 || Drift Lab UI || Must-have || T03,T15,T16
+T18 || AIS ingestion and quality report || Must-have || T05
+T19 || Trajectory reconstruction || Must-have || T18
+T20 || Candidate spatial-temporal filter || Must-have || T15,T19
+T21 || Explainable candidate scoring || Must-have || T20
+T22 || Vessel intelligence UI || Must-have || T03,T21
+T23 || Evidence manifest and audit export || Must-have || T04,T12,T16,T21
+T24 || Human-readable report || Must-have || T23
+T25 || End-to-end case orchestration || Must-have || T04,T11,T15,T18,T21,T23
+T26 || Offline prepared demo case || Must-have || T25
+T27 || Golden-case regression suite || Must-have || T26
+T28 || Performance and failure hardening || Must-have || T27
+T29 || Accessibility and responsive audit || Should-have || T22,T24
+T30 || Local analyst/reviewer accounts || Should-have || T04,T23
+T31 || Advanced detection experiment || Nice-to-have || T10,T27
+T32 || Demo rehearsal package || Must-have || T28,T29
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T01: Repository and quality baseline. Scope: Create /frontend, /backend, /data/sample_case, /models, /tests and /docs. Add README, format/lint/test scripts and environment examples. Dependencies already completed: None. Completion requirements: Repository installs cleanly; frontend and backend health checks run; no secret committed. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T02: Shared case/API contract. Scope: Define Pydantic models, OpenAPI routes and matching TypeScript types for Case, Job, Detection, DriftRun, AisQuality, Candidate and Artifact. Dependencies already completed: T01. Completion requirements: Schemas serialize round-trip; invalid payloads fail; frontend compiles against types. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T03: FreeBuff application shell. Scope: Generate responsive navigation, dashboard, case route, stage rail, map placeholder, evidence drawer and theme tokens. Dependencies already completed: T02. Completion requirements: Desktop/tablet/mobile layouts work; keyboard focus visible; no scientific logic in client. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T04: Case persistence. Scope: Implement SQLite models and CRUD for cases, jobs, artifacts and audit events. Dependencies already completed: T02. Completion requirements: Create/read/update draft case; unique IDs; timestamps UTC; audit event written; tests pass. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T05: Secure file registration. Scope: Implement streamed upload/registration with size, extension, magic/type, filename and path checks plus SHA-256. Dependencies already completed: T04. Completion requirements: Traversal/corrupt/large tests fail safely; valid file stored under case root; hash returned. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T06: SAR metadata validation. Scope: Read prepared GeoTIFF/COG and validate CRS, affine transform, band count, nodata, dimensions, acquisition time and polarization metadata. Dependencies already completed: T05. Completion requirements: Valid sample accepted; missing CRS/time rejected with field errors; metadata persisted. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T07: SAR preprocessing and tiling. Scope: Implement dB conversion, clipping/normalization, optional restrained speckle filter, land/valid mask and overlapping tile index. Dependencies already completed: T06. Completion requirements: Deterministic tiles map back to geospatial coordinates; configuration version recorded; unit tests pass. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T08: Dataset split and data card. Scope: Create event/region-based train/validation/test split and document sources, licenses, labels, leakage prevention and limitations. Dependencies already completed: T07. Completion requirements: No event crosses splits; manifest reproducible; data card committed. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T09: Tile classifier baseline. Scope: Train MobileNetV3/EfficientNet-B0 for oil/look-alike/normal candidate classification using balanced sampling. Dependencies already completed: T08. Completion requirements: Held-out per-class precision/recall/F1 and confusion matrix saved; checkpoint reproducible. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T10: U-Net segmentation baseline. Scope: Train lightweight U-Net with pretrained encoder using Dice + focal loss and conservative augmentation. Dependencies already completed: T08. Completion requirements: Held-out IoU/Dice/precision/recall reported; visual overlays saved; no spatial leakage. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T11: ONNX inference service. Scope: Export selected models and implement CPU inference with model/version/checksum validation. Dependencies already completed: T09,T10. Completion requirements: Same sample is within tolerance vs PyTorch; memory/latency measured on target laptop; API returns job result. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T12: Mask post-processing and geometry. Scope: Threshold, remove only documented small components, polygonize and compute projected area/perimeter/centroid/orientation/fragmentation. Dependencies already completed: T11. Completion requirements: Known geometry tests pass; output GeoJSON WGS84; raw probability preserved. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T13: Detection review UI. Scope: Show raw SAR, probability, mask opacity, geometry, model info and accept/correct workflow. Dependencies already completed: T03,T12. Completion requirements: Analyst can accept or upload corrected polygon; review status and audit event persist. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T14: Environmental data adapter. Scope: Load cached wind/current NetCDF, validate variables/units/time coverage and expose coverage summary. Dependencies already completed: T05. Completion requirements: Prepared subset loads; missing variable/time produces safe actionable error. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T15: Backward drift ensemble. Scope: Wrap OpenDrift/OpenOil transport for backward scenarios with perturbed forcing, source position and release time. Dependencies already completed: T12,T14. Completion requirements: 50/75/90% origin contours and time window generated; inputs/seed reproducible. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T16: Forward drift ensemble. Scope: Run forward transport and generate time-stepped contours and coastline-contact indicators where data allows. Dependencies already completed: T14,T15. Completion requirements: Map-ready GeoJSON/time series created; uncertainty visible; weathering limitations documented. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T17: Drift Lab UI. Scope: Create backward/forward toggle, parameter summary, run state, legend, contours and common time slider. Dependencies already completed: T03,T15,T16. Completion requirements: Particle/contour animation is pausable; failure/offline states work; run comparison is readable. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T18: AIS ingestion and quality report. Scope: Map CSV/Parquet columns; normalize UTC/WGS84; remove duplicates; flag impossible coordinates/jumps and quantify gaps. Dependencies already completed: T05. Completion requirements: Raw rows retained; quality counts and warnings returned; malformed inputs rejected. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T19: Trajectory reconstruction. Scope: Sort by MMSI/time, split long gaps, interpolate only short configured gaps and create track GeoJSON. Dependencies already completed: T18. Completion requirements: Golden trajectories reproduce expected segments; interpolation is labelled; no silent deletion. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T20: Candidate spatial-temporal filter. Scope: Intersect reconstructed tracks with origin probability corridor and release window plus controlled buffers. Dependencies already completed: T15,T19. Completion requirements: Retained/excluded vessels include reasons; no-intersection returns empty credible result. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T21: Explainable candidate scoring. Scope: Calculate source proximity, temporal alignment, trajectory similarity, AIS-gap quality, motion anomaly and vessel context with configurable weights. Dependencies already completed: T20. Completion requirements: Component scores sum correctly; explanations name evidence and limitations; close scores show ambiguity. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T22: Vessel intelligence UI. Scope: Build ranked candidate list, evidence bars, quality warning, selected track replay and explanation drawer. Dependencies already completed: T03,T21. Completion requirements: Selecting candidate highlights track/intersection; no label says guilty; mobile drawer works. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T23: Evidence manifest and audit export. Scope: Generate manifest with hashes, model/software versions, parameters, seeds, source metadata, transformations and review status. Dependencies already completed: T04,T12,T16,T21. Completion requirements: Tamper test fails verification; JSON/GeoJSON export deterministic; approved revision immutable. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T24: Human-readable report. Scope: Generate print-ready HTML and optional PDF view with summary, methods, maps, candidates, uncertainty and limitations. Dependencies already completed: T23. Completion requirements: Report downloads; includes manifest checksum; never asserts legal guilt. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T25: End-to-end case orchestration. Scope: Add stage dependencies, idempotency, background jobs, progress, cancellation, retry and recovery after refresh. Dependencies already completed: T04,T11,T15,T18,T21,T23. Completion requirements: One button advances valid stage; duplicate submit does not duplicate run; failed job retry works. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T26: Offline prepared demo case. Scope: Package a legally usable regional SAR tile, environmental subset, AIS fixture, expected outputs and reset script. Dependencies already completed: T25. Completion requirements: Exact judge path completes with Wi-Fi disabled; assets/checksums verified; reset is one click. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T27: Golden-case regression suite. Scope: Add unit/API/integration/UI tests plus fixed expected summary ranges and hashes for prepared case. Dependencies already completed: T26. Completion requirements: CI/local command passes; intentional algorithm/output drift is detected. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T28: Performance and failure hardening. Scope: Profile CPU/RAM/disk; cap dimensions/ensemble size; add timeouts, low-disk checks and sanitized error handling. Dependencies already completed: T27. Completion requirements: Prepared demo meets time budget on Ryzen 7/16 GB; no crash on tested bad input. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T29: Accessibility and responsive audit. Scope: Test keyboard path, contrast, focus, labels, reduced motion, mobile layout and textual map summaries. Dependencies already completed: T22,T24. Completion requirements: Critical accessibility checks pass at 360, 768 and 1440 px. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T30: Local analyst/reviewer accounts. Scope: Add credential auth, secure cookie, roles, case assignment and approval revision workflow. Dependencies already completed: T04,T23. Completion requirements: Permission matrix tests pass; approved evidence cannot be silently modified. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T31: Advanced detection experiment. Scope: Evaluate attention U-Net/SegFormer or dual-polarization fusion only against frozen baseline. Dependencies already completed: T10,T27. Completion requirements: Adopt only with cross-region improvement and acceptable latency; otherwise document rejection. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+COPY INTO CODING TOOL | Inspect the existing SamudraTrace AI repository before editing. Implement ticket T32: Demo rehearsal package. Scope: Create eight-minute script, reset/check commands, readiness page and backup screen recording. Dependencies already completed: T28,T29. Completion requirements: Two consecutive offline rehearsals succeed and all judge questions have evidence-backed answers. Preserve existing behaviour and public contracts, do not add unrelated features, do not hardcode secrets or fabricate successful scientific outputs. Add or update relevant tests, run formatting/lint/type-check/tests, and finish by reporting changed files, commands run, results, assumptions and any remaining risk.
+
+FREEZE SCOPE | Do not start nice-to-have research upgrades until T01-T28 and T32 pass. A complete modest detector connected to real drift, AIS reasoning and reproducible evidence is stronger than an advanced segmentation notebook without an operational chain.

@@ -1,0 +1,5 @@
+# Oilora Blue AI — Phase-2 geospatial runtime (SAR preprocessing, raster IO)
+# Installed on top of requirements.txt when SAR preprocessing starts.
+# Pinned to versions verified importable on the development machine.
+numpy==2.5.2
+rasterio==1.5.1

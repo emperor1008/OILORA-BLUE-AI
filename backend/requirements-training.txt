@@ -1,0 +1,7 @@
+# Oilora Blue AI — Training-only dependencies (PyTorch).
+#
+# NEVER INSTALLED during Phase 1 or in CI. Training happens on the developer
+# machine only, after the inference pipeline is proven. Use CPU wheels:
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+torch>=2.2.0
+torchvision>=0.17.0

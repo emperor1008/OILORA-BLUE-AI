@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@layer base {
+  :root {
+    --ocean-midnight: #071E2E;
+    --ocean-deep: #0B2A3D;
+    --ocean-blue: #0E7490;
+    --ocean-teal: #0891B2;
+    --ocean-aqua: #22D3EE;
+    --ocean-success: #10B981;
+    --ocean-ice: #F4FAFC;
+    --ocean-surface: #FFFFFF;
+    --ocean-slate: #1E293B;
+    --ocean-muted: #64748B;
+    --ocean-warning: #F59E0B;
+    --ocean-critical: #EF5B5B;
+    --ocean-border: #CBDDE5;
+  }
+
+  body {
+    @apply bg-ocean-ice text-ocean-slate font-sans antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  * {
+    @apply border-ocean-border;
+  }
+
+  /* Focus ring for accessibility */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ocean-blue;
+  }
+}
+
+@layer components {
+  /* Card component */
+  .card {
+    @apply bg-white rounded-card border border-ocean-border shadow-card;
+  }
+
+  /* Status chips */
+  .chip {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .chip-default {
+    @apply bg-ocean-ice text-ocean-slate border border-ocean-border;
+  }
+
+  .chip-success {
+    @apply bg-emerald-50 text-emerald-700 border border-emerald-200;
+  }
+
+  .chip-warning {
+    @apply bg-amber-50 text-amber-700 border border-amber-200;
+  }
+
+  .chip-critical {
+    @apply bg-red-50 text-red-700 border border-red-200;
+  }
+
+  .chip-info {
+    @apply bg-cyan-50 text-cyan-700 border border-cyan-200;
+  }
+
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-150;
+  }
+
+  .btn-primary {
+    @apply btn bg-ocean-blue text-white hover:bg-ocean-teal active:bg-ocean-deep;
+  }
+
+  .btn-secondary {
+    @apply btn bg-white text-ocean-slate border border-ocean-border hover:bg-ocean-ice active:bg-gray-100;
+  }
+
+  .btn-ghost {
+    @apply btn text-ocean-muted hover:text-ocean-slate hover:bg-ocean-ice;
+  }
+
+  .btn-danger {
+    @apply btn bg-red-500 text-white hover:bg-red-600 active:bg-red-700;
+  }
+
+  /* Loading spinner */
+  .spinner {
+    @apply w-5 h-5 border-2 border-ocean-border border-t-ocean-blue rounded-full animate-spin;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-ocean-border rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-ocean-muted;
+}

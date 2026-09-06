@@ -1,0 +1,347 @@
+===== 02_Technical_Architecture (source: 02_SamudraTrace_AI_Technical_Architecture.docx) =====
+
+SIH26143  |  PRE-BUILD SPECIFICATION
+Technical Architecture Document
+System components, data contracts, repository structure, schema and configuration
+[TABLE]
+PROJECT
+SamudraTrace AI — Sentinel-1 oil-spill detection, bidirectional drift reconstruction and explainable AIS vessel attribution for Smart India Hackathon 2026.
+
+Prepared for a CSE Core + AI/ML team  |  Zero-cost MVP  |  Version 1.0
+
+1. Architecture decision
+Use a local-first modular monorepo. FreeBuff generates the Next.js/TypeScript experience. A Python FastAPI service owns all scientific computation. SQLite stores case metadata; files hold large geospatial artifacts. The system uses prepared regional data and lightweight ONNX inference so the user’s Ryzen 7 laptop can run the judge demonstration without a discrete NVIDIA GPU.
+2. Technology stack
+[TABLE]
+Layer
+Selected technology
+Reason
+Frontend
+FreeBuff Web export; Next.js 15; React; TypeScript
+Fast UI scaffolding and typed contracts.
+Map
+MapLibre GL JS or Leaflet; OpenStreetMap
+Token-free geospatial layers and animations.
+API
+Python 3.11; FastAPI; Pydantic
+Direct integration with ML/GIS libraries and generated OpenAPI.
+ML training
+PyTorch; segmentation-models-pytorch; Albumentations
+Transfer learning and reproducible augmentation.
+Inference
+ONNX Runtime CPU
+Portable and efficient on AMD/Windows hardware.
+Raster/GIS
+Rasterio, GDAL, GeoPandas, Shapely, PyProj
+Georeferenced raster/vector transformations.
+Drift
+OpenDrift/OpenOil; xarray; NetCDF4
+Established Lagrangian transport framework.
+AIS
+Pandas or Polars; MovingPandas; scikit-learn
+Cleaning, trajectories, anomaly features and ranking.
+Storage
+SQLite + filesystem artifacts
+Zero-cost, portable and sufficient for MVP.
+Testing
+Pytest, Ruff, Playwright, Vitest
+Unit, API, regression and UI validation.
+
+3. Logical component model
+[TABLE]
+Component
+Inputs
+Outputs
+Responsibility
+Case service
+Case metadata
+Case ID/status
+Lifecycle and orchestration.
+SAR pipeline
+GeoTIFF/COG
+Normalized tiles
+Validation, calibration and tiling.
+Detection engine
+Tiles/model
+Probability and mask
+Classifier, segmenter and geometry trigger.
+Geometry service
+Mask/CRS
+GeoJSON and measurements
+Polygonization and projected measurements.
+Drift engine
+Polygon, time, wind/current
+Particles and contours
+Backward origin and forward forecast ensembles.
+AIS engine
+CSV/Parquet
+Clean tracks/features
+Quality checks, segmentation and interpolation.
+Attribution engine
+Origin corridor and tracks
+Candidates/explanations
+Filtering, evidence scoring and ranking.
+Evidence service
+All artifacts
+Manifest/report
+Hashes, versions, provenance and export.
+Web application
+API outputs
+Interactive investigation
+Map, timeline, review and reporting.
+
+4. Processing sequence
+POST /cases creates an investigation and immutable case directory.
+POST /cases/{id}/sar validates metadata and registers the scene.
+POST /cases/{id}/detect launches preprocessing, classification, segmentation and geometry.
+POST /cases/{id}/drift executes backward and forward ensembles with stored seeds.
+POST /cases/{id}/ais validates, cleans and segments trajectories.
+POST /cases/{id}/attribute filters candidates and calculates component evidence.
+GET /cases/{id}/map assembles GeoJSON layers; GET /cases/{id}/report creates the evidence package.
+5. Repository structure
+[TABLE]
+Path
+Responsibility
+/frontend
+FreeBuff-generated Next.js UI.
+/frontend/src/app
+Routes: dashboard, case, detection, drift, vessels, report.
+/frontend/src/components
+Map, timeline, evidence cards, forms and status components.
+/frontend/src/lib/api
+Typed API client and generated schemas.
+/backend/app/api
+FastAPI routes and request/response schemas.
+/backend/app/core
+Settings, logging, errors, job state and hashing.
+/backend/app/sar
+Raster validation, preprocessing and tiling.
+/backend/app/ml
+Models, inference, post-processing and model card.
+/backend/app/drift
+OpenDrift adapters and contour generation.
+/backend/app/ais
+Cleaning, trajectory building and features.
+/backend/app/attribution
+Candidate filtering, scoring and explanations.
+/backend/app/evidence
+Manifest, export and audit log.
+/data/sample_case
+Small legally usable offline demonstration.
+/models
+Versioned ONNX models and metadata.
+/tests
+Unit, golden-case, API and UI tests.
+/docs
+Architecture, data card, model card and runbook.
+
+6. Database schema
+[TABLE]
+Table
+Important fields
+Relationships
+users
+id, display_name, role, created_at
+Own/review cases; optional local auth.
+cases
+id, title, region, observation_time, status, owner_id
+Parent of all investigation records.
+sar_scenes
+id, case_id, path, sha256, crs, transform, polarization, acquired_at
+Many scenes per case.
+detections
+id, case_id, model_version, threshold, probability_path, mask_path, confidence, review_status
+One or more runs per case.
+spill_geometries
+id, detection_id, polygon_path, area_km2, perimeter_km, centroid, orientation
+Belongs to detection.
+drift_runs
+id, case_id, direction, forcing_sources, parameters_json, seed, started_at, ended_at
+Many scenarios per case.
+ais_sources
+id, case_id, path, sha256, row_count, quality_json
+Raw data registration.
+ais_tracks
+id, source_id, mmsi, segment_id, start/end, quality_json, geometry_path
+Many tracks per source.
+candidates
+id, case_id, mmsi, total_score, components_json, explanation, quality_level
+Ranked result per vessel.
+artifacts
+id, case_id, type, path, sha256, producer_version, created_at
+Provenance registry.
+audit_events
+id, case_id, actor, action, entity_type, entity_id, timestamp, details_json
+Append-only activity record.
+
+7. Core API contract
+[TABLE]
+Method and path
+Request
+Response
+POST /cases
+title, region, observation_time
+case_id, status
+POST /cases/{id}/sar
+multipart GeoTIFF + metadata
+scene, validation
+POST /cases/{id}/detect
+scene_id, model_version, threshold
+job_id; later mask/geometry/confidence
+POST /cases/{id}/drift
+direction, hours, ensemble settings
+job_id; later contours/time series
+POST /cases/{id}/ais
+CSV/Parquet + mapping
+quality report, track count
+POST /cases/{id}/attribute
+drift_run_id, score profile
+ranked candidates and warnings
+GET /cases/{id}/map
+optional time/layer filter
+GeoJSON feature collection
+GET /cases/{id}/report
+format
+HTML/PDF/JSON manifest
+GET /jobs/{id}
+none
+state, progress, error, result refs
+GET /health
+none
+dependencies and demo readiness
+
+8. Data and model contracts
+Raster input: GeoTIFF/COG with CRS, affine transform, nodata, acquisition UTC, scene ID and polarization.
+Detection output: probability raster, thresholded mask, confidence, model/preprocessing versions and review state.
+Environmental input: NetCDF with coordinate axes, UTC time, variable names, units, depth and source metadata.
+AIS input: MMSI, UTC timestamp, latitude, longitude, SOG, COG and optional vessel type/name; original rows retained.
+Map output: WGS84 GeoJSON with stable layer IDs, timestamps and style hints.
+Evidence manifest: hashes, source licenses, parameters, software/model versions, warnings and created timestamps.
+9. Environment variables
+[TABLE]
+Variable
+Purpose
+Rule
+APP_ENV
+development/test/demo
+Default development; never controls secrets.
+DATABASE_URL
+SQLite URL
+Local default sqlite:///./data/app.db.
+ARTIFACT_ROOT
+Case artifact directory
+Resolve and validate under approved root.
+MODEL_PATH
+ONNX model location
+Versioned local path; verify checksum.
+CORS_ORIGINS
+Allowed frontend origins
+Explicit list; no wildcard outside development.
+MAX_UPLOAD_MB
+Upload limit
+Reject before parsing.
+LOG_LEVEL
+Structured log verbosity
+No secrets or raw personal data.
+NEXT_PUBLIC_API_BASE_URL
+Browser API origin
+Public configuration only.
+MAP_STYLE_URL
+Optional map style
+Use offline/local fallback in demo.
+
+10. Local execution profile
+[TABLE]
+LAPTOP CONSTRAINT
+Train in free Kaggle/Colab sessions, keep checkpoints, export the final model to ONNX, crop the demonstration region and cap ensemble size. The final prepared workflow should run on CPU with 16 GB RAM.
+
+11. Engineering rules
+API schemas are written before FreeBuff screen generation.
+Scientific code never executes inside the browser or FreeBuff-generated client.
+Raw inputs are immutable; derived artifacts always point to their parents.
+Every operation is retry-safe or protected by an idempotency key.
+No hidden global state; settings come from validated configuration.
+Large files are streamed, size-limited and processed outside the request thread.
+Advanced models remain behind stable interfaces and cannot block the baseline MVP.
+
+===== TABLE CONTENT =====
+PROJECT | SamudraTrace AI — Sentinel-1 oil-spill detection, bidirectional drift reconstruction and explainable AIS vessel attribution for Smart India Hackathon 2026.
+
+Layer || Selected technology || Reason
+Frontend || FreeBuff Web export; Next.js 15; React; TypeScript || Fast UI scaffolding and typed contracts.
+Map || MapLibre GL JS or Leaflet; OpenStreetMap || Token-free geospatial layers and animations.
+API || Python 3.11; FastAPI; Pydantic || Direct integration with ML/GIS libraries and generated OpenAPI.
+ML training || PyTorch; segmentation-models-pytorch; Albumentations || Transfer learning and reproducible augmentation.
+Inference || ONNX Runtime CPU || Portable and efficient on AMD/Windows hardware.
+Raster/GIS || Rasterio, GDAL, GeoPandas, Shapely, PyProj || Georeferenced raster/vector transformations.
+Drift || OpenDrift/OpenOil; xarray; NetCDF4 || Established Lagrangian transport framework.
+AIS || Pandas or Polars; MovingPandas; scikit-learn || Cleaning, trajectories, anomaly features and ranking.
+Storage || SQLite + filesystem artifacts || Zero-cost, portable and sufficient for MVP.
+Testing || Pytest, Ruff, Playwright, Vitest || Unit, API, regression and UI validation.
+
+Component || Inputs || Outputs || Responsibility
+Case service || Case metadata || Case ID/status || Lifecycle and orchestration.
+SAR pipeline || GeoTIFF/COG || Normalized tiles || Validation, calibration and tiling.
+Detection engine || Tiles/model || Probability and mask || Classifier, segmenter and geometry trigger.
+Geometry service || Mask/CRS || GeoJSON and measurements || Polygonization and projected measurements.
+Drift engine || Polygon, time, wind/current || Particles and contours || Backward origin and forward forecast ensembles.
+AIS engine || CSV/Parquet || Clean tracks/features || Quality checks, segmentation and interpolation.
+Attribution engine || Origin corridor and tracks || Candidates/explanations || Filtering, evidence scoring and ranking.
+Evidence service || All artifacts || Manifest/report || Hashes, versions, provenance and export.
+Web application || API outputs || Interactive investigation || Map, timeline, review and reporting.
+
+Path || Responsibility
+/frontend || FreeBuff-generated Next.js UI.
+/frontend/src/app || Routes: dashboard, case, detection, drift, vessels, report.
+/frontend/src/components || Map, timeline, evidence cards, forms and status components.
+/frontend/src/lib/api || Typed API client and generated schemas.
+/backend/app/api || FastAPI routes and request/response schemas.
+/backend/app/core || Settings, logging, errors, job state and hashing.
+/backend/app/sar || Raster validation, preprocessing and tiling.
+/backend/app/ml || Models, inference, post-processing and model card.
+/backend/app/drift || OpenDrift adapters and contour generation.
+/backend/app/ais || Cleaning, trajectory building and features.
+/backend/app/attribution || Candidate filtering, scoring and explanations.
+/backend/app/evidence || Manifest, export and audit log.
+/data/sample_case || Small legally usable offline demonstration.
+/models || Versioned ONNX models and metadata.
+/tests || Unit, golden-case, API and UI tests.
+/docs || Architecture, data card, model card and runbook.
+
+Table || Important fields || Relationships
+users || id, display_name, role, created_at || Own/review cases; optional local auth.
+cases || id, title, region, observation_time, status, owner_id || Parent of all investigation records.
+sar_scenes || id, case_id, path, sha256, crs, transform, polarization, acquired_at || Many scenes per case.
+detections || id, case_id, model_version, threshold, probability_path, mask_path, confidence, review_status || One or more runs per case.
+spill_geometries || id, detection_id, polygon_path, area_km2, perimeter_km, centroid, orientation || Belongs to detection.
+drift_runs || id, case_id, direction, forcing_sources, parameters_json, seed, started_at, ended_at || Many scenarios per case.
+ais_sources || id, case_id, path, sha256, row_count, quality_json || Raw data registration.
+ais_tracks || id, source_id, mmsi, segment_id, start/end, quality_json, geometry_path || Many tracks per source.
+candidates || id, case_id, mmsi, total_score, components_json, explanation, quality_level || Ranked result per vessel.
+artifacts || id, case_id, type, path, sha256, producer_version, created_at || Provenance registry.
+audit_events || id, case_id, actor, action, entity_type, entity_id, timestamp, details_json || Append-only activity record.
+
+Method and path || Request || Response
+POST /cases || title, region, observation_time || case_id, status
+POST /cases/{id}/sar || multipart GeoTIFF + metadata || scene, validation
+POST /cases/{id}/detect || scene_id, model_version, threshold || job_id; later mask/geometry/confidence
+POST /cases/{id}/drift || direction, hours, ensemble settings || job_id; later contours/time series
+POST /cases/{id}/ais || CSV/Parquet + mapping || quality report, track count
+POST /cases/{id}/attribute || drift_run_id, score profile || ranked candidates and warnings
+GET /cases/{id}/map || optional time/layer filter || GeoJSON feature collection
+GET /cases/{id}/report || format || HTML/PDF/JSON manifest
+GET /jobs/{id} || none || state, progress, error, result refs
+GET /health || none || dependencies and demo readiness
+
+Variable || Purpose || Rule
+APP_ENV || development/test/demo || Default development; never controls secrets.
+DATABASE_URL || SQLite URL || Local default sqlite:///./data/app.db.
+ARTIFACT_ROOT || Case artifact directory || Resolve and validate under approved root.
+MODEL_PATH || ONNX model location || Versioned local path; verify checksum.
+CORS_ORIGINS || Allowed frontend origins || Explicit list; no wildcard outside development.
+MAX_UPLOAD_MB || Upload limit || Reject before parsing.
+LOG_LEVEL || Structured log verbosity || No secrets or raw personal data.
+NEXT_PUBLIC_API_BASE_URL || Browser API origin || Public configuration only.
+MAP_STYLE_URL || Optional map style || Use offline/local fallback in demo.
+
+LAPTOP CONSTRAINT | Train in free Kaggle/Colab sessions, keep checkpoints, export the final model to ONNX, crop the demonstration region and cap ensemble size. The final prepared workflow should run on CPU with 16 GB RAM.

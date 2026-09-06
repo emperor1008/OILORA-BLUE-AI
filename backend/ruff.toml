@@ -1,0 +1,11 @@
+# Ruff configuration for the Oilora Blue AI backend.
+line-length = 100
+target-version = "py311"
+
+[lint.per-file-ignores]
+# FastAPI idiom: File()/Form() must appear in argument defaults.
+"app/routers/*.py" = ["B008", "ASYNC230"]  # ASYNC230: streamed upload buffering via open() is intentional in Phase 1
+# Best-effort directory creation; failures are non-fatal at startup.
+"app/config.py" = ["S110"]
+# Readiness checks are best-effort; each check has its own guard.
+"app/routers/health.py" = ["BLE001", "S110"]

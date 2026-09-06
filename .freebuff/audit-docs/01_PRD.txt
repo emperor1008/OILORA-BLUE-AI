@@ -1,0 +1,222 @@
+===== 01_PRD (source: 01_SamudraTrace_AI_PRD.docx) =====
+
+SIH26143  |  PRE-BUILD SPECIFICATION
+Product Requirements Document
+Product purpose, scope, workflows, requirements and measurable outcomes
+[TABLE]
+PROJECT
+SamudraTrace AI — Sentinel-1 oil-spill detection, bidirectional drift reconstruction and explainable AIS vessel attribution for Smart India Hackathon 2026.
+
+Prepared for a CSE Core + AI/ML team  |  Zero-cost MVP  |  Version 1.0
+
+1. Executive product definition
+[TABLE]
+PRODUCT DECISION
+Build an evidence-centred investigation workspace that turns an observed Sentinel-1 SAR scene into a reviewed spill polygon, probabilistic source corridor, future drift forecast and ranked vessel candidates with auditable explanations.
+
+SamudraTrace AI is not a global live-surveillance system and must not claim that a vessel is legally responsible. Its purpose is to reduce investigation time by combining satellite, oceanographic and vessel-trajectory evidence in one reproducible case workflow.
+2. Problem statement and opportunity
+Marine oil-spill analysis is fragmented. Analysts must separately inspect SAR imagery, distinguish look-alikes, estimate movement from wind and currents, search historical AIS tracks and explain why particular vessels deserve review. The result is slow, difficult to reproduce and vulnerable to overconfident conclusions.
+[TABLE]
+Problem
+Current consequence
+Product response
+Oil and look-alikes both appear as dark SAR patches
+False alarms and wasted review time
+Two-stage classifier plus segmentation and analyst correction.
+Drift depends on uncertain environmental forcing
+A single origin line creates false precision
+Backward/forward OpenDrift ensembles with probability contours.
+AIS is noisy, sparse or missing
+Candidate lists may be misleading
+Quality flags, gap analysis, transparent exclusions and confidence reduction.
+Evidence is split across tools
+Investigations are slow and hard to audit
+One case workspace with provenance, timeline, map and export.
+
+3. Product vision
+North star: become a modular maritime decision-support platform that helps pollution-response teams move from observation to defensible prioritization in minutes while preserving uncertainty, provenance and human oversight.
+4. Target users and jobs
+[TABLE]
+Persona
+Context and need
+Primary job
+Frustration
+Maritime analyst
+Technically skilled; comfortable with GIS and vessel data
+Investigate a slick and shortlist relevant traffic
+Switching tools and manually correlating timestamps.
+Pollution-response officer
+Operational user; needs clarity more than model detail
+Estimate future spread and threatened coast
+Unclear uncertainty and slow forecasting.
+Supervisor/reviewer
+Decision maker; limited time
+Approve escalation and inspect evidence quality
+Black-box scores without provenance.
+Data/ML operator
+Technical team member
+Add cases, retrain models and inspect failures
+Undocumented preprocessing and dataset leakage.
+
+5. Scope and prioritization
+[TABLE]
+Capability
+Priority
+Version 1 requirement
+Case management
+Must-have
+Create/open a case; preserve inputs, statuses and outputs.
+SAR ingestion
+Must-have
+Accept prepared georeferenced GeoTIFF/COG and validate metadata.
+Oil detection
+Must-have
+Classify candidate tiles; segment oil probability; permit mask review.
+Spill geometry
+Must-have
+Area, perimeter, centroid, orientation and fragmentation.
+Backward drift
+Must-have
+Probabilistic source corridor and release-time window.
+Forward drift
+Must-have
+Time-stepped spread and uncertainty contours.
+AIS intelligence
+Must-have
+Clean, segment, filter and replay historical trajectories.
+Vessel scoring
+Must-have
+Top candidates with component scores and warnings.
+Evidence export
+Must-have
+HTML/PDF-style report plus JSON/GeoJSON manifest.
+User accounts
+Should-have
+Local analyst/reviewer roles; optional for single-device demo.
+Live feeds
+Nice-to-have
+Post-MVP operational integration.
+Advanced transformers
+Nice-to-have
+Only after baseline and error analysis.
+
+6. End-to-end user flow
+Open the mission dashboard and select “Prepared Demo Case” or create a new case.
+Register a georeferenced Sentinel-1 SAR tile and verify acquisition time, CRS and polarization.
+Run detection; compare raw SAR, probability overlay and binary mask.
+Accept or correct the mask, then review geometry and detection confidence.
+Load cached wind/current data and run backward origin reconstruction.
+Run forward spread forecasting and inspect 50%, 75% and 90% contours.
+Load AIS history; review quality flags and reconstructed tracks.
+Generate candidate ranking; open each vessel to inspect distance, time, behaviour and data completeness.
+Export an investigation package and preserve the exact parameters and hashes.
+7. Functional requirements
+FR-01: The system shall create a case with unique ID, region, observation time and status.
+FR-02: The system shall reject files with missing CRS, transform or acquisition time.
+FR-03: The detector shall output probability raster, binary mask, model version and confidence.
+FR-04: The analyst shall be able to accept or replace the generated spill polygon.
+FR-05: The drift engine shall run backward and forward scenarios with saved random seeds.
+FR-06: The AIS pipeline shall retain raw rows, cleaned rows and transformation logs.
+FR-07: Candidate scoring shall expose every component and exclusion reason.
+FR-08: The map shall replay spill particles and vessel tracks on one time axis.
+FR-09: Every output shall link to source files, versions and parameters.
+FR-10: The complete prepared case shall run without internet access.
+8. Non-functional requirements
+[TABLE]
+Area
+Requirement
+Performance
+Prepared regional case completes within the demo window on Ryzen 7 / 16 GB RAM; UI remains responsive during background work.
+Reliability
+Failures are recoverable; cached demo inputs are immutable; operations are idempotent.
+Explainability
+No unexplained score; every probability has a definition and data-quality context.
+Security
+Validate uploads, restrict paths, sanitize filenames, protect exported evidence and never expose secrets.
+Accessibility
+Keyboard navigation, visible focus, readable contrast, labelled controls and non-colour status cues.
+Portability
+Windows-first local setup; Python environment and frontend dependencies documented; Docker optional.
+Cost
+No paid API, GPU, database, domain or commercial AIS subscription required for MVP.
+
+9. Success metrics and acceptance
+[TABLE]
+Metric
+MVP success definition
+Detection
+Held-out event metrics reported: precision, recall, IoU, Dice and false positives per scene.
+Drift
+Known synthetic release recovered inside stated probability corridor; centroid and contour errors reported.
+Attribution
+Known source appears in Top-3 across prepared synthetic scenarios; component evidence visible.
+Workflow
+One uninterrupted case completes from SAR input to export in under eight demonstration minutes.
+Trust
+Every result displays confidence, limitations, provenance and data completeness.
+Resilience
+Exact judge path succeeds with Wi-Fi disabled.
+
+10. Deliberately excluded from version one
+Continuous global Sentinel-1 monitoring and automatic scene discovery.
+Commercial live AIS coverage for Indian waters.
+Legal attribution, enforcement decisions or automated accusations.
+Multi-tenant cloud scale, paid observability and 24/7 service guarantees.
+Research-grade transformer architectures before the lightweight baseline is validated.
+Native Android/iOS apps; the responsive web application is the MVP.
+11. Release gate
+[TABLE]
+MVP IS READY ONLY WHEN
+A reviewer can run the prepared case offline, see the detected slick, move the common time slider backward and forward, inspect ranked candidate evidence, export the manifest and reproduce the same result from saved inputs.
+
+
+===== TABLE CONTENT =====
+PROJECT | SamudraTrace AI — Sentinel-1 oil-spill detection, bidirectional drift reconstruction and explainable AIS vessel attribution for Smart India Hackathon 2026.
+
+PRODUCT DECISION | Build an evidence-centred investigation workspace that turns an observed Sentinel-1 SAR scene into a reviewed spill polygon, probabilistic source corridor, future drift forecast and ranked vessel candidates with auditable explanations.
+
+Problem || Current consequence || Product response
+Oil and look-alikes both appear as dark SAR patches || False alarms and wasted review time || Two-stage classifier plus segmentation and analyst correction.
+Drift depends on uncertain environmental forcing || A single origin line creates false precision || Backward/forward OpenDrift ensembles with probability contours.
+AIS is noisy, sparse or missing || Candidate lists may be misleading || Quality flags, gap analysis, transparent exclusions and confidence reduction.
+Evidence is split across tools || Investigations are slow and hard to audit || One case workspace with provenance, timeline, map and export.
+
+Persona || Context and need || Primary job || Frustration
+Maritime analyst || Technically skilled; comfortable with GIS and vessel data || Investigate a slick and shortlist relevant traffic || Switching tools and manually correlating timestamps.
+Pollution-response officer || Operational user; needs clarity more than model detail || Estimate future spread and threatened coast || Unclear uncertainty and slow forecasting.
+Supervisor/reviewer || Decision maker; limited time || Approve escalation and inspect evidence quality || Black-box scores without provenance.
+Data/ML operator || Technical team member || Add cases, retrain models and inspect failures || Undocumented preprocessing and dataset leakage.
+
+Capability || Priority || Version 1 requirement
+Case management || Must-have || Create/open a case; preserve inputs, statuses and outputs.
+SAR ingestion || Must-have || Accept prepared georeferenced GeoTIFF/COG and validate metadata.
+Oil detection || Must-have || Classify candidate tiles; segment oil probability; permit mask review.
+Spill geometry || Must-have || Area, perimeter, centroid, orientation and fragmentation.
+Backward drift || Must-have || Probabilistic source corridor and release-time window.
+Forward drift || Must-have || Time-stepped spread and uncertainty contours.
+AIS intelligence || Must-have || Clean, segment, filter and replay historical trajectories.
+Vessel scoring || Must-have || Top candidates with component scores and warnings.
+Evidence export || Must-have || HTML/PDF-style report plus JSON/GeoJSON manifest.
+User accounts || Should-have || Local analyst/reviewer roles; optional for single-device demo.
+Live feeds || Nice-to-have || Post-MVP operational integration.
+Advanced transformers || Nice-to-have || Only after baseline and error analysis.
+
+Area || Requirement
+Performance || Prepared regional case completes within the demo window on Ryzen 7 / 16 GB RAM; UI remains responsive during background work.
+Reliability || Failures are recoverable; cached demo inputs are immutable; operations are idempotent.
+Explainability || No unexplained score; every probability has a definition and data-quality context.
+Security || Validate uploads, restrict paths, sanitize filenames, protect exported evidence and never expose secrets.
+Accessibility || Keyboard navigation, visible focus, readable contrast, labelled controls and non-colour status cues.
+Portability || Windows-first local setup; Python environment and frontend dependencies documented; Docker optional.
+Cost || No paid API, GPU, database, domain or commercial AIS subscription required for MVP.
+
+Metric || MVP success definition
+Detection || Held-out event metrics reported: precision, recall, IoU, Dice and false positives per scene.
+Drift || Known synthetic release recovered inside stated probability corridor; centroid and contour errors reported.
+Attribution || Known source appears in Top-3 across prepared synthetic scenarios; component evidence visible.
+Workflow || One uninterrupted case completes from SAR input to export in under eight demonstration minutes.
+Trust || Every result displays confidence, limitations, provenance and data completeness.
+Resilience || Exact judge path succeeds with Wi-Fi disabled.
+
+MVP IS READY ONLY WHEN | A reviewer can run the prepared case offline, see the detected slick, move the common time slider backward and forward, inspect ranked candidate evidence, export the manifest and reproduce the same result from saved inputs.
