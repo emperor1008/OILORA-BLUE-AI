@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Oilora Blue AI — one-time setup for the local development environment.
+    Oilora Blue AI - one-time setup for the local development environment.
 .DESCRIPTION
     Checks prerequisites, creates backend\.venv, installs backend core + dev
     dependencies, and installs frontend dependencies (npm ci with the lockfile).
@@ -10,7 +10,7 @@
 #>
 $ErrorActionPreference = "Stop"
 
-# ─── Locate repository root ────────────────────────────────────────────
+# --- Locate repository root --------------------------------------------
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Split-Path -Parent $ScriptDir
 $BackendDir = Join-Path $RepoRoot "backend"
@@ -19,7 +19,7 @@ $FrontendDir = Join-Path $RepoRoot "frontend"
 Write-Host "Oilora Blue AI setup" -ForegroundColor Cyan
 Write-Host "Repository: $RepoRoot"
 
-# ─── Prerequisites ─────────────────────────────────────────────────────
+# --- Prerequisites -----------------------------------------------------
 $PythonOk = $false
 try {
     $PyVersion = python --version 2>&1
@@ -55,7 +55,7 @@ try {
 }
 Write-Host "  [OK] npm present"
 
-# ─── Backend virtual environment ───────────────────────────────────────
+# --- Backend virtual environment ---------------------------------------
 $VenvDir = Join-Path $BackendDir ".venv"
 $VenvPython = Join-Path $VenvDir "Scripts\python.exe"
 
@@ -83,7 +83,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 Write-Host "  [OK] backend dependencies installed"
 
-# ─── Frontend dependencies ─────────────────────────────────────────────
+# --- Frontend dependencies ---------------------------------------------
 Push-Location $FrontendDir
 try {
     if (Test-Path "package-lock.json") {
@@ -101,7 +101,7 @@ try {
 }
 Write-Host "  [OK] frontend dependencies installed"
 
-# ─── Summary ───────────────────────────────────────────────────────────
+# --- Summary -----------------------------------------------------------
 Write-Host ""
 Write-Host "Setup complete." -ForegroundColor Green
 Write-Host "Next steps:"

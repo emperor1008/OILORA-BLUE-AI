@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Oilora Blue AI — start the backend and frontend development servers.
+    Oilora Blue AI - start the backend and frontend development servers.
 .DESCRIPTION
     Starts the FastAPI backend on 127.0.0.1:8000 and the Next.js frontend on
     localhost:3000 as detached processes, writes their PIDs to .freebuff\pids,
@@ -36,7 +36,7 @@ function Test-PortInUse([int]$Port) {
     }
 }
 
-# ─── Port checks ───────────────────────────────────────────────────────
+# --- Port checks -------------------------------------------------------
 if (Test-PortInUse $BackendPort) {
     Write-Error "Backend port $BackendPort is already in use. Run .\scripts\stop.ps1 first (or pick another port with -BackendPort)."
 }
@@ -44,7 +44,7 @@ if (Test-PortInUse $FrontendPort) {
     Write-Error "Frontend port $FrontendPort is already in use. Run .\scripts\stop.ps1 first (or pick another port with -FrontendPort)."
 }
 
-# ─── Backend ───────────────────────────────────────────────────────────
+# --- Backend -----------------------------------------------------------
 $VenvPython = Join-Path $BackendDir ".venv\Scripts\python.exe"
 $BackendPy = if (Test-Path $VenvPython) { $VenvPython } else { "python" }
 $BackendLog = Join-Path $LogDir "backend.log"
@@ -77,7 +77,7 @@ if (-not $BackendUp) {
 }
 Write-Host "  [OK] backend healthy (pid $($BackendProc.Id))" -ForegroundColor Green
 
-# ─── Frontend ──────────────────────────────────────────────────────────
+# --- Frontend ----------------------------------------------------------
 $FrontendLog = Join-Path $LogDir "frontend.log"
 $FrontendErr = Join-Path $LogDir "frontend.log.err"
 $FrontendPidFile = Join-Path $PidDir "frontend.pid"
@@ -108,7 +108,7 @@ if (-not $FrontendUp) {
 }
 Write-Host "  [OK] frontend responding (pid $($FrontendProc.Id))" -ForegroundColor Green
 
-# ─── Summary ───────────────────────────────────────────────────────────
+# --- Summary -----------------------------------------------------------
 Write-Host ""
 Write-Host "Oilora Blue AI is running:" -ForegroundColor Green
 Write-Host "  Frontend : http://localhost:$FrontendPort  (pid $($FrontendProc.Id))"
