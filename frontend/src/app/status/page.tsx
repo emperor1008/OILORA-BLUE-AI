@@ -13,23 +13,26 @@ import {
   RefreshCw,
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
-import { getSystemStatus, SystemStatus } from "@/lib/api";
+import { getSystemStatus, SystemStatus, errorRequestId } from "@/lib/api";
 
 export default function StatusPage() {
   const [status, setStatus] = useState<SystemStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [requestId, setRequestId] = useState<string | null>(null);
 
   const loadStatus = async () => {
     try {
       setLoading(true);
       setError(null);
+      setRequestId(null);
       const response = await getSystemStatus();
       if (response.success && response.data) {
         setStatus(response.data);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load status");
+      setRequestId(errorRequestId(err) || null);
     } finally {
       setLoading(false);
     }
@@ -105,6 +108,11 @@ export default function StatusPage() {
           <div className="card px-5 py-8 text-center">
             <XCircle className="w-12 h-12 text-ocean-critical mx-auto mb-4" />
             <p className="text-sm text-ocean-muted">{error}</p>
+            {requestId && (
+              <p className="text-xs text-ocean-muted font-mono mt-2">
+                Request ID: {requestId}
+              </p>
+            )}
           </div>
         )}
 

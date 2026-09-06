@@ -28,6 +28,11 @@
     "postcss": "^8.4.49",
     "autoprefixer": "^10.4.20",
     "vitest": "^2.1.8",
-    "@vitejs/plugin-react": "^4.3.4"
+    "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^25.0.1",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^15.1.0"
   }
 }

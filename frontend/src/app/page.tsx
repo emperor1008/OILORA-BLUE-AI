@@ -13,12 +13,13 @@ import {
   ArrowRight,
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
+import StatusChip from "@/components/StatusChip";
 import {
   listCases,
   CaseSummary,
   formatDate,
   stageLabel,
-  statusColor,
+  errorRequestId,
 } from "@/lib/api";
 
 export default function DashboardPage() {
@@ -26,11 +27,13 @@ export default function DashboardPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [requestId, setRequestId] = useState<string | null>(null);
 
   const loadCases = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
+      setRequestId(null);
       const response = await listCases(0, 100);
       setCases(response.data || []);
       setTotal(response.total || 0);
@@ -38,6 +41,7 @@ export default function DashboardPage() {
       setError(
         err instanceof Error ? err.message : "Failed to load investigations",
       );
+      setRequestId(errorRequestId(err) || null);
     } finally {
       setLoading(false);
     }
@@ -136,6 +140,11 @@ export default function DashboardPage() {
                   Failed to load investigations
                 </p>
                 <p className="text-xs text-red-500 mt-0.5">{error}</p>
+                {requestId && (
+                  <p className="text-[10px] text-red-400 mt-1 font-mono">
+                    Request ID: {requestId}
+                  </p>
+                )}
               </div>
               <button onClick={loadCases} className="btn-ghost text-xs ml-auto">
                 Retry
@@ -217,9 +226,7 @@ export default function DashboardPage() {
                     <h3 className="text-sm font-semibold text-ocean-midnight truncate">
                       {caseItem.title}
                     </h3>
-                    <span className={`chip ${statusColor(caseItem.status)}`}>
-                      {caseItem.status.replace("_", " ")}
-                    </span>
+                    <StatusChip status={caseItem.status} />
                   </div>
                   <div className="flex items-center gap-4 text-xs text-ocean-muted">
                     <span>{stageLabel(caseItem.current_stage)}</span>

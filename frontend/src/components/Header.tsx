@@ -1,7 +1,6 @@
 "use client";
 
 import { Menu, Anchor } from "lucide-react";
-import Link from "next/link";
 
 interface HeaderProps {
   onMenuToggle?: () => void;

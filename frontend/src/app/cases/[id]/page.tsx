@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -13,9 +13,9 @@ import {
   Clock,
   Database,
   Shield,
-  Hash,
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
+import StatusChip from "@/components/StatusChip";
 import {
   getCase,
   CaseDetail,
@@ -25,7 +25,7 @@ import {
   deleteCase,
   formatFileSize,
   formatDate,
-  statusColor,
+  errorRequestId,
   stageLabel,
 } from "@/lib/api";
 
@@ -38,15 +38,16 @@ export default function CaseDetailPage() {
   const [files, setFiles] = useState<FileInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorRequestIdValue, setErrorRequestIdValue] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadCase = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
+      setErrorRequestIdValue(null);
       const response = await getCase(caseId);
       if (response.success && response.data) {
         setCaseData(response.data as CaseDetail);
@@ -54,6 +55,7 @@ export default function CaseDetailPage() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load case");
+      setErrorRequestIdValue(errorRequestId(err) || null);
     } finally {
       setLoading(false);
     }
@@ -76,8 +78,10 @@ export default function CaseDetailPage() {
         loadCase(); // Reload case to update dataset_ready
       }
     } catch (err) {
+      const requestId = errorRequestId(err);
       setUploadStatus(
-        err instanceof Error ? err.message : "Upload failed",
+        `${err instanceof Error ? err.message : "Upload failed"}` +
+          (requestId ? ` — Request ID: ${requestId}` : ""),
       );
     } finally {
       setUploading(false);
@@ -133,6 +137,11 @@ export default function CaseDetailPage() {
               Investigation Not Found
             </h2>
             <p className="text-sm text-ocean-muted mb-4">{error || "This case does not exist."}</p>
+            {errorRequestIdValue && (
+              <p className="text-xs text-ocean-muted font-mono mb-4">
+                Request ID: {errorRequestIdValue}
+              </p>
+            )}
             <Link href="/" className="btn-primary">
               Back to Dashboard
             </Link>
@@ -166,9 +175,7 @@ export default function CaseDetailPage() {
                 {caseData.title}
               </h1>
               <div className="flex items-center gap-3 mt-1 text-xs text-ocean-muted">
-                <span className={`chip ${statusColor(caseData.status)}`}>
-                  {caseData.status.replace("_", " ")}
-                </span>
+                <StatusChip status={caseData.status} />
                 <span>{stageLabel(caseData.current_stage)}</span>
                 {caseData.region && <span>{caseData.region}</span>}
               </div>
@@ -309,9 +316,7 @@ export default function CaseDetailPage() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-ocean-muted">Status</span>
-                  <span className={`chip ${statusColor(caseData.status)}`}>
-                    {caseData.status.replace("_", " ")}
-                  </span>
+                  <StatusChip status={caseData.status} />
                 </div>
                 <div className="flex justify-between">
                   <span className="text-ocean-muted">Stage</span>

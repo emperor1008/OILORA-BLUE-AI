@@ -109,10 +109,24 @@ class ApiError extends Error {
     public status: number,
     message: string,
     public errorData?: unknown,
+    public requestId?: string,
   ) {
     super(message);
     this.name = "ApiError";
   }
+}
+
+/** Extract the safest human-readable message from a backend error body. */
+function extractErrorMessage(errorData: unknown): string | null {
+  if (!errorData || typeof errorData !== "object") return null;
+  const d = errorData as Record<string, unknown>;
+  if (typeof d.detail === "string") return d.detail;
+  if (d.detail && typeof d.detail === "object") {
+    const msg = (d.detail as Record<string, unknown>).message;
+    if (typeof msg === "string") return msg;
+  }
+  if (typeof d.message === "string") return d.message;
+  return null;
 }
 
 async function request<T>(
@@ -128,21 +142,35 @@ async function request<T>(
     ...options,
   });
 
+  const requestId = response.headers.get("x-request-id") || undefined;
+
   if (!response.ok) {
-    let errorData: unknown;
+    let errorData: unknown = null;
     try {
       errorData = await response.json();
     } catch {
       errorData = null;
     }
+    const serverMessage = extractErrorMessage(errorData);
     throw new ApiError(
       response.status,
-      `API Error: ${response.status} ${response.statusText}`,
+      serverMessage || `API Error: ${response.status} ${response.statusText}`,
       errorData,
+      requestId,
     );
   }
 
   return response.json();
+}
+
+/** Return the request ID from an error, if the backend supplied one. */
+export function errorRequestId(err: unknown): string | undefined {
+  if (err instanceof ApiError) return err.requestId;
+  if (err && typeof err === "object") {
+    const rid = (err as { requestId?: unknown }).requestId;
+    if (typeof rid === "string") return rid;
+  }
+  return undefined;
 }
 
 // ─── Health ───────────────────────────────────────────────────────────
@@ -228,17 +256,21 @@ export async function uploadFile(
     body: formData,
   });
 
+  const requestId = response.headers.get("x-request-id") || undefined;
+
   if (!response.ok) {
-    let errorData: unknown;
+    let errorData: unknown = null;
     try {
       errorData = await response.json();
     } catch {
       errorData = null;
     }
+    const serverMessage = extractErrorMessage(errorData);
     throw new ApiError(
       response.status,
-      `Upload failed: ${response.status}`,
+      serverMessage || `Upload failed: ${response.status}`,
       errorData,
+      requestId,
     );
   }
 

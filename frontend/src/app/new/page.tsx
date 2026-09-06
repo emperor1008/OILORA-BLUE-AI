@@ -5,12 +5,13 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
-import { createCase, CaseCreate } from "@/lib/api";
+import { createCase, CaseCreate, errorRequestId } from "@/lib/api";
 
 export default function NewCasePage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [requestId, setRequestId] = useState<string | null>(null);
   const [form, setForm] = useState<CaseCreate>({
     title: "",
     description: "",
@@ -28,12 +29,14 @@ export default function NewCasePage() {
     try {
       setSubmitting(true);
       setError(null);
+      setRequestId(null);
       const result = await createCase(form);
       if (result.success && result.data) {
         router.push(`/cases/${result.data.id}`);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create case");
+      setRequestId(errorRequestId(err) || null);
     } finally {
       setSubmitting(false);
     }
@@ -266,6 +269,11 @@ export default function NewCasePage() {
           {error && (
             <div className="card px-5 py-3 bg-red-50 border-red-200 text-sm text-red-700">
               {error}
+              {requestId && (
+                <p className="text-xs text-red-400 font-mono mt-1">
+                  Request ID: {requestId}
+                </p>
+              )}
             </div>
           )}
 
