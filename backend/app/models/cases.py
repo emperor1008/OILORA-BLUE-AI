@@ -2,9 +2,17 @@
 Oilora Blue AI — Case Models
 
 Pydantic models for case management API contracts.
+
+Per-field timestamp parsing/normalization happens here (timezone-aware ISO
+8601 required, normalized to canonical UTC). Cross-field semantic rules
+(chronology, bounding-box shape, future dates) live in the case service via
+``app.validation.validate_case_semantics`` so partial PATCH updates can be
+validated against the merged case.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from ..validation import normalize_iso_utc
 
 
 class CaseCreate(BaseModel):
@@ -13,13 +21,23 @@ class CaseCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=200, description="Case title")
     description: str = Field(default="", max_length=2000, description="Case description")
     region: str = Field(default="", max_length=200, description="Geographic region")
-    incident_time: str | None = Field(None, description="ISO 8601 incident time")
-    observation_time: str | None = Field(None, description="ISO 8601 observation time")
+    incident_time: str | None = Field(
+        None, description="ISO 8601 incident time (timezone required)"
+    )
+    observation_time: str | None = Field(
+        None, description="ISO 8601 observation time (timezone required)"
+    )
     bbox_min_lat: float | None = Field(None, ge=-90, le=90)
     bbox_min_lon: float | None = Field(None, ge=-180, le=180)
     bbox_max_lat: float | None = Field(None, ge=-90, le=90)
     bbox_max_lon: float | None = Field(None, ge=-180, le=180)
     analyst_notes: str = Field(default="", max_length=5000, description="Analyst notes")
+
+    @field_validator("incident_time", "observation_time")
+    @classmethod
+    def _normalize_timestamp(cls, value: str | None) -> str | None:
+        """Parse as timezone-aware ISO 8601 and normalize to UTC."""
+        return normalize_iso_utc(value)
 
 
 class CaseUpdate(BaseModel):
@@ -35,6 +53,12 @@ class CaseUpdate(BaseModel):
     bbox_max_lat: float | None = Field(None, ge=-90, le=90)
     bbox_max_lon: float | None = Field(None, ge=-180, le=180)
     analyst_notes: str | None = Field(None, max_length=5000)
+
+    @field_validator("incident_time", "observation_time")
+    @classmethod
+    def _normalize_timestamp(cls, value: str | None) -> str | None:
+        """Parse as timezone-aware ISO 8601 and normalize to UTC."""
+        return normalize_iso_utc(value)
 
 
 class CaseSummary(BaseModel):

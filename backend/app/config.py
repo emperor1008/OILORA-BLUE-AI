@@ -3,10 +3,19 @@ Oilora Blue AI — Application Configuration
 All settings loaded from environment variables with sensible defaults.
 """
 
+import logging
 import os
 from pathlib import Path
 
 from pydantic_settings import BaseSettings
+
+logger = logging.getLogger("oilora_blue.config")
+
+# Canonical backend base directory (backend/). Relative paths — including the
+# default DATABASE_PATH — resolve against this directory, never against the
+# process current working directory, so the same database is used no matter
+# where the server is started from.
+BACKEND_BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 class Settings(BaseSettings):
@@ -59,16 +68,45 @@ class Settings(BaseSettings):
     def model_post_init(self, __context, /) -> None:
         """Derive directory paths and create them if needed."""
         # Resolve the database path to an absolute path (single source of truth).
+        # Relative values are anchored to the canonical backend base directory so
+        # the resolved path never depends on the process current working directory.
         if not self.DATABASE_PATH:
-            self.DATABASE_PATH = str(Path(__file__).parent.parent / "oilora_blue.db")
+            self.DATABASE_PATH = str(BACKEND_BASE_DIR / "oilora_blue.db")
         else:
-            self.DATABASE_PATH = str(Path(self.DATABASE_PATH).expanduser().resolve())
+            raw = Path(self.DATABASE_PATH).expanduser()
+            if raw.is_absolute():
+                resolved = raw.resolve()
+            else:
+                resolved = (BACKEND_BASE_DIR / raw).resolve()
+            self.DATABASE_PATH = str(resolved)
         db_parent = os.path.dirname(self.DATABASE_PATH)
         if db_parent:
             try:
                 os.makedirs(db_parent, exist_ok=True)
             except (OSError, FileNotFoundError):
                 pass
+
+        # Warn (never merge/delete) if a stray database exists somewhere the
+        # previous CWD-relative resolution could have created it. This helps
+        # catch a second database that predates the base-dir anchor.
+        repo_root = BACKEND_BASE_DIR.parent
+        stray_candidates = [
+            Path.cwd() / "oilora_blue.db",
+            repo_root / "oilora_blue.db",
+        ]
+        resolved_db = Path(self.DATABASE_PATH)
+        for candidate in stray_candidates:
+            try:
+                exists = candidate.is_file() and candidate.resolve() != resolved_db
+            except OSError:
+                exists = False
+            if exists:
+                logger.warning(
+                    "Stray database detected at %s — the application uses %s. "
+                    "No automatic merge or deletion is performed.",
+                    candidate,
+                    self.DATABASE_PATH,
+                )
 
         if not self.CASES_DIR:
             self.CASES_DIR = os.path.join(self.DATA_DIR, "cases") if self.DATA_DIR else ""

@@ -39,14 +39,31 @@ describe("DashboardPage", () => {
     });
   });
 
-  it("shows the honest empty state when no investigations exist", async () => {
+  it("shows the professional empty state when no investigations exist", async () => {
     render(<DashboardPage />);
     expect(
-      await screen.findByText("No Investigations Yet"),
+      await screen.findByText("Begin a Maritime Analysis"),
     ).toBeInTheDocument();
-    expect(screen.getByText("Start New Investigation")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Create a case to register satellite imagery, review geospatial evidence, and document an environmental incident.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Create Case")).toBeInTheDocument();
+    expect(screen.getByText("No cases have been created yet.")).toBeInTheDocument();
     // All three stat cards (total, completed, in progress) read zero
     expect(screen.getAllByText("0")).toHaveLength(3);
+  });
+
+  it("does not automatically create a case when the database is empty", async () => {
+    render(<DashboardPage />);
+    await screen.findByText("Begin a Maritime Analysis");
+    // Only the list request runs; no create request is ever issued.
+    expect(listCases).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Create Case").closest("a")).toHaveAttribute(
+      "href",
+      "/new",
+    );
   });
 
   it("shows the error message and request ID when loading fails", async () => {

@@ -5,11 +5,24 @@ Handles case CRUD operations with SQLite persistence.
 """
 
 import json
+import os
+import shutil
 import uuid
 from datetime import UTC, datetime
 from typing import Any
 
+from fastapi import HTTPException
+
+from .. import config
 from ..database import get_db
+from ..validation import validate_case_semantics
+
+
+def _raise_semantic_errors(data: dict[str, Any]) -> None:
+    """Raise a structured 422 when case semantics (chronology/bounds) fail."""
+    errors = validate_case_semantics(data)
+    if errors:
+        raise HTTPException(status_code=422, detail=errors)
 
 
 class CaseService:
@@ -25,7 +38,13 @@ class CaseService:
 
     @classmethod
     def create_case(cls, data: dict[str, Any]) -> dict[str, Any]:
-        """Create a new investigation case."""
+        """Create a new investigation case.
+
+        Timestamps are already normalized to UTC by the Pydantic field
+        validators; chronology/bounds semantics are validated here and rejected
+        with a structured 422 before any row is inserted.
+        """
+        _raise_semantic_errors(data)
         case_id = cls.generate_id()
         now = cls.now_iso()
 
@@ -95,10 +114,23 @@ class CaseService:
 
     @classmethod
     def update_case(cls, case_id: str, data: dict[str, Any]) -> dict[str, Any] | None:
-        """Update a case."""
+        """Update a case.
+
+        Partial PATCH payloads are merged onto the existing case before
+        semantic validation so chronology/bounds rules are enforced against the
+        resulting case, not just the supplied fields.
+        """
         updates = {k: v for k, v in data.items() if v is not None}
         if not updates:
             return cls.get_case(case_id)
+
+        existing = cls.get_case(case_id)
+        if existing is None:
+            return None
+
+        merged = dict(existing)
+        merged.update(updates)
+        _raise_semantic_errors(merged)
 
         updates["updated_at"] = cls.now_iso()
         set_clause = ", ".join(f"{k} = ?" for k in updates)
@@ -119,10 +151,53 @@ class CaseService:
 
     @classmethod
     def delete_case(cls, case_id: str) -> bool:
-        """Delete a case and all associated data."""
+        """
+        Delete a case and all associated data.
+
+        Related rows (files, jobs, audit events, evidence manifests, map
+        viewports) are removed inside one transaction. Case-specific runtime
+        directories under the configured storage roots are removed afterwards,
+        scoped strictly to the case ID. Nothing outside those roots is touched.
+        """
         with get_db() as conn:
             result = conn.execute("DELETE FROM cases WHERE id = ?", (case_id,))
-            return result.rowcount > 0
+            if result.rowcount == 0:
+                return False
+            for table in [
+                "files",
+                "jobs",
+                "audit_log",
+                "evidence_manifests",
+                "map_viewports",
+            ]:
+                conn.execute(f"DELETE FROM {table} WHERE case_id = ?", (case_id,))
+
+        # Remove case-specific runtime directories (safe, scoped removal).
+        cls._remove_case_dir(config.settings.UPLOADS_DIR, case_id)
+        cls._remove_case_dir(config.settings.CASES_DIR, case_id)
+        cls._remove_case_dir(config.settings.OUTPUTS_DIR, case_id)
+        return True
+
+    @staticmethod
+    def _remove_case_dir(root: str, case_id: str) -> None:
+        """Remove one case directory only when it sits directly under the root."""
+        if not root or not case_id:
+            return
+        root_abs = os.path.abspath(root)
+        target = os.path.abspath(os.path.join(root, case_id))
+        # Safety: target must be a direct child of the root and match the case id.
+        if os.path.dirname(target) != root_abs:
+            return
+        if os.path.basename(target) != case_id:
+            return
+        if not os.path.isdir(target):
+            return
+        try:
+            shutil.rmtree(target)
+        except OSError:
+            # A leftover directory must not prevent the API from succeeding;
+            # it is logged by the caller's audit trail if present.
+            pass
 
     @classmethod
     def update_stage(cls, case_id: str, stage: str, status: str | None = None) -> None:

@@ -10,16 +10,77 @@ import {
   Cpu,
   CheckCircle,
   XCircle,
+  HelpCircle,
   RefreshCw,
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
-import { getSystemStatus, SystemStatus, errorRequestId } from "@/lib/api";
+import {
+  getHealth,
+  getSystemStatus,
+  SystemStatus,
+  errorRequestId,
+} from "@/lib/api";
+
+type RowState = "ok" | "error" | "unknown";
+
+interface StatusRow {
+  label: string;
+  state: RowState;
+  detail: string;
+  icon: typeof Activity;
+}
+
+function RowIcon({ state }: { state: RowState }) {
+  if (state === "ok") return <CheckCircle className="w-5 h-5 text-ocean-success shrink-0" />;
+  if (state === "error") return <XCircle className="w-5 h-5 text-ocean-critical shrink-0" />;
+  return <HelpCircle className="w-5 h-5 text-ocean-muted shrink-0" />;
+}
 
 export default function StatusPage() {
   const [status, setStatus] = useState<SystemStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [requestId, setRequestId] = useState<string | null>(null);
+
+  // Internet connectivity comes from the browser (navigator.onLine + events),
+  // never from the backend — they measure different things.
+  const [online, setOnline] = useState<boolean>(() =>
+    typeof navigator === "undefined" ? true : navigator.onLine,
+  );
+
+  // API-service availability comes from a real /api/health probe.
+  const [apiState, setApiState] = useState<"checking" | "operational" | "unavailable">(
+    "checking",
+  );
+
+  useEffect(() => {
+    const handleOnline = () => setOnline(true);
+    const handleOffline = () => setOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const probe = async () => {
+      try {
+        const response = await getHealth();
+        if (!cancelled) {
+          setApiState(response?.success ? "operational" : "unavailable");
+        }
+      } catch {
+        if (!cancelled) setApiState("unavailable");
+      }
+    };
+    probe();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const loadStatus = async () => {
     try {
@@ -42,42 +103,67 @@ export default function StatusPage() {
     loadStatus();
   }, []);
 
-  const items = status
-    ? [
-        {
-          label: "Backend",
-          status: status.backend_status === "healthy",
-          detail: status.backend_status,
-          icon: Activity,
-        },
-        {
-          label: "Database",
-          status: status.database_status === "connected",
-          detail: status.database_status,
-          icon: Database,
-        },
-        {
-          label: "Detection Model",
-          status: status.model_available,
-          detail: status.model_available ? "Available" : "Not loaded",
-          icon: Cpu,
-        },
-        {
-          label: "Disk Space",
-          status: status.disk_space_gb > 10,
-          detail: `${status.disk_space_gb} GB available`,
-          icon: HardDrive,
-        },
-        {
-          label: "Network",
-          status: true,
-          detail: status.offline_ready
-            ? "Offline-ready"
-            : "Online required",
-          icon: status.offline_ready ? WifiOff : Wifi,
-        },
-      ]
-    : [];
+  // Each row reports exactly what it measures. "Unknown" is shown instead of a
+  // green check whenever a value has not been verified.
+  const items: StatusRow[] = [
+    {
+      label: "Internet connection",
+      state: online ? "ok" : "error",
+      detail: online ? "Online" : "Offline",
+      icon: online ? Wifi : WifiOff,
+    },
+    {
+      label: "API service",
+      state:
+        apiState === "operational"
+          ? "ok"
+          : apiState === "unavailable"
+            ? "error"
+            : "unknown",
+      detail:
+        apiState === "operational"
+          ? "Operational"
+          : apiState === "unavailable"
+            ? "Unavailable"
+            : "Checking…",
+      icon: Activity,
+    },
+    {
+      label: "Backend",
+      state: status ? (status.backend_status === "healthy" ? "ok" : "error") : "unknown",
+      detail: status ? status.backend_status : "Unknown",
+      icon: Activity,
+    },
+    {
+      label: "Database",
+      state: status
+        ? status.database_status === "connected"
+          ? "ok"
+          : "error"
+        : "unknown",
+      detail: status ? status.database_status : "Unknown",
+      icon: Database,
+    },
+    {
+      label: "Detection Model",
+      state: status
+        ? status.model_available
+          ? "ok"
+          : "error"
+        : "unknown",
+      detail: status ? (status.model_available ? "Available" : "Not loaded") : "Unknown",
+      icon: Cpu,
+    },
+    {
+      label: "Disk Space",
+      state: status ? (status.disk_space_gb > 10 ? "ok" : "error") : "unknown",
+      detail: status ? `${status.disk_space_gb} GB available` : "Unknown",
+      icon: HardDrive,
+    },
+  ];
+
+  const anyError = items.some((item) => item.state === "error");
+  const anyUnknown = items.some((item) => item.state === "unknown");
 
   return (
     <AppShell>
@@ -97,7 +183,7 @@ export default function StatusPage() {
           </button>
         </div>
 
-        {loading && !status && (
+        {loading && !status && !error && (
           <div className="card px-5 py-12 text-center">
             <div className="spinner mx-auto mb-4" />
             <p className="text-sm text-ocean-muted">Checking system status...</p>
@@ -105,7 +191,7 @@ export default function StatusPage() {
         )}
 
         {error && (
-          <div className="card px-5 py-8 text-center">
+          <div className="card px-5 py-8 text-center mb-6">
             <XCircle className="w-12 h-12 text-ocean-critical mx-auto mb-4" />
             <p className="text-sm text-ocean-muted">{error}</p>
             {requestId && (
@@ -113,70 +199,77 @@ export default function StatusPage() {
                 Request ID: {requestId}
               </p>
             )}
+            <p className="text-xs text-ocean-muted mt-3">
+              Detailed readiness rows below still reflect what could be verified.
+            </p>
           </div>
         )}
 
-        {status && (
-          <div className="space-y-4">
-            {/* Overall status */}
-            <div
-              className={`card px-6 py-5 ${
-                items.every((i) => i.status)
-                  ? "border-emerald-200 bg-emerald-50/30"
-                  : "border-amber-200 bg-amber-50/30"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                {items.every((i) => i.status) ? (
-                  <CheckCircle className="w-6 h-6 text-ocean-success" />
-                ) : (
-                  <XCircle className="w-6 h-6 text-ocean-warning" />
-                )}
-                <div>
-                  <p className="text-lg font-semibold text-ocean-midnight">
-                    {items.every((i) => i.status)
-                      ? "All Systems Operational"
-                      : "Some Systems Unavailable"}
-                  </p>
-                  <p className="text-xs text-ocean-muted">
-                    Version {status.app_version} ·{" "}
-                    {status.local_demo_mode ? "Local Demo Mode" : "Production"}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Individual checks */}
-            <div className="card divide-y divide-ocean-border">
-              {items.map((item) => (
-                <div key={item.label} className="flex items-center gap-4 px-6 py-4">
-                  <item.icon className="w-5 h-5 text-ocean-muted shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-ocean-slate">
-                      {item.label}
-                    </p>
-                    <p className="text-xs text-ocean-muted">{item.detail}</p>
-                  </div>
-                  {item.status ? (
-                    <CheckCircle className="w-5 h-5 text-ocean-success shrink-0" />
+        <div className="space-y-4">
+          {/* Overall status */}
+          <div
+            className={`card px-6 py-5 ${
+              !anyError && !anyUnknown
+                ? "border-emerald-200 bg-emerald-50/30"
+                : "border-amber-200 bg-amber-50/30"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              {!anyError && !anyUnknown ? (
+                <CheckCircle className="w-6 h-6 text-ocean-success" />
+              ) : anyError ? (
+                <XCircle className="w-6 h-6 text-ocean-warning" />
+              ) : (
+                <HelpCircle className="w-6 h-6 text-ocean-muted" />
+              )}
+              <div>
+                <p className="text-lg font-semibold text-ocean-midnight">
+                  {!anyError && !anyUnknown
+                    ? "All Systems Operational"
+                    : anyError
+                      ? "Some Systems Unavailable"
+                      : "Status Partially Unknown"}
+                </p>
+                <p className="text-xs text-ocean-muted">
+                  {status ? (
+                    <>
+                      Version {status.app_version} ·{" "}
+                      {status.local_demo_mode ? "Local Mode" : "Production"}
+                    </>
                   ) : (
-                    <XCircle className="w-5 h-5 text-ocean-critical shrink-0" />
+                    "Readiness values that could not be verified are shown as Unknown."
                   )}
-                </div>
-              ))}
-            </div>
-
-            {/* Model checksum */}
-            {status.model_checksum && (
-              <div className="card px-6 py-4">
-                <p className="text-xs text-ocean-muted mb-1">Model Checksum (SHA-256)</p>
-                <p className="font-mono text-xs text-ocean-slate break-all">
-                  {status.model_checksum}
                 </p>
               </div>
-            )}
+            </div>
           </div>
-        )}
+
+          {/* Individual checks */}
+          <div className="card divide-y divide-ocean-border">
+            {items.map((item) => (
+              <div key={item.label} className="flex items-center gap-4 px-6 py-4">
+                <item.icon className="w-5 h-5 text-ocean-muted shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-ocean-slate">
+                    {item.label}
+                  </p>
+                  <p className="text-xs text-ocean-muted">{item.detail}</p>
+                </div>
+                <RowIcon state={item.state} />
+              </div>
+            ))}
+          </div>
+
+          {/* Model checksum */}
+          {status?.model_checksum && (
+            <div className="card px-6 py-4">
+              <p className="text-xs text-ocean-muted mb-1">Model Checksum (SHA-256)</p>
+              <p className="font-mono text-xs text-ocean-slate break-all">
+                {status.model_checksum}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </AppShell>
   );

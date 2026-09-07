@@ -5,13 +5,37 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
-import { createCase, CaseCreate, errorRequestId } from "@/lib/api";
+import {
+  createCase,
+  CaseCreate,
+  errorRequestId,
+  fieldErrors,
+} from "@/lib/api";
+
+/**
+ * Convert a stored UTC ISO timestamp to the value expected by a
+ * ``datetime-local`` input (browser-local wall time). The reverse direction
+ * (input → UTC) happens in the change handler via ``new Date(...).toISOString()``,
+ * so the local→UTC conversion is explicit and visible.
+ */
+function utcToLocalInput(iso?: string): string {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+    date.getDate(),
+  )}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
 
 export default function NewCasePage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [requestId, setRequestId] = useState<string | null>(null);
+  const [fieldErrorList, setFieldErrorList] = useState<
+    { field: string; message: string }[]
+  >([]);
   const [form, setForm] = useState<CaseCreate>({
     title: "",
     description: "",
@@ -30,6 +54,7 @@ export default function NewCasePage() {
       setSubmitting(true);
       setError(null);
       setRequestId(null);
+      setFieldErrorList([]);
       const result = await createCase(form);
       if (result.success && result.data) {
         router.push(`/cases/${result.data.id}`);
@@ -37,6 +62,7 @@ export default function NewCasePage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create case");
       setRequestId(errorRequestId(err) || null);
+      setFieldErrorList(fieldErrors(err));
     } finally {
       setSubmitting(false);
     }
@@ -140,14 +166,17 @@ export default function NewCasePage() {
             <h2 className="text-sm font-semibold text-ocean-midnight uppercase tracking-wider">
               Temporal Information
             </h2>
+            <p className="text-xs text-ocean-muted -mt-2">
+              Times are entered in your local timezone and stored as UTC.
+            </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-ocean-slate mb-1.5">
-                  Incident Time (UTC)
+                  Incident Time (local, converted to UTC)
                 </label>
                 <input
                   type="datetime-local"
-                  value={form.incident_time?.replace("Z", "").slice(0, 16) || ""}
+                  value={utcToLocalInput(form.incident_time)}
                   onChange={(e) =>
                     updateField(
                       "incident_time",
@@ -159,11 +188,11 @@ export default function NewCasePage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-ocean-slate mb-1.5">
-                  Observation Time (UTC)
+                  Observation Time (local, converted to UTC)
                 </label>
                 <input
                   type="datetime-local"
-                  value={form.observation_time?.replace("Z", "").slice(0, 16) || ""}
+                  value={utcToLocalInput(form.observation_time)}
                   onChange={(e) =>
                     updateField(
                       "observation_time",
@@ -267,8 +296,18 @@ export default function NewCasePage() {
 
           {/* Error display */}
           {error && (
-            <div className="card px-5 py-3 bg-red-50 border-red-200 text-sm text-red-700">
-              {error}
+            <div className="card px-5 py-3 bg-red-50 border-red-200 text-sm text-red-700" role="alert">
+              <p>{error}</p>
+              {fieldErrorList.length > 0 && (
+                <ul className="mt-2 space-y-1">
+                  {fieldErrorList.map((fieldError, index) => (
+                    <li key={`${fieldError.field}-${index}`} className="text-xs">
+                      <span className="font-mono">{fieldError.field}:</span>{" "}
+                      {fieldError.message}
+                    </li>
+                  ))}
+                </ul>
+              )}
               {requestId && (
                 <p className="text-xs text-red-400 font-mono mt-1">
                   Request ID: {requestId}
