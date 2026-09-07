@@ -1,0 +1,27 @@
+{
+  "type": "FeatureCollection",
+  "name": "TEST FIXTURE - synthetic boundary (not a real oil spill)",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "fixture-boundary-1",
+      "properties": {
+        "title": "TEST FIXTURE: synthetic investigation boundary",
+        "fixture": true,
+        "description": "Coordinate/rendering contract fixture only. Not real oil-spill evidence and never used in a demonstration."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [68.0, 18.0],
+            [69.0, 18.0],
+            [69.0, 19.0],
+            [68.0, 19.0],
+            [68.0, 18.0]
+          ]
+        ]
+      }
+    }
+  ]
+}
