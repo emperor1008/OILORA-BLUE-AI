@@ -168,16 +168,19 @@ export default function DashboardPage() {
               <FileText className="w-8 h-8 text-ocean-muted" />
             </div>
             <h3 className="text-lg font-semibold text-ocean-midnight mb-2">
-              No Investigations Yet
+              Begin a Maritime Analysis
             </h3>
             <p className="text-sm text-ocean-muted max-w-md mx-auto mb-6">
-              Create your first oil-spill investigation to begin analyzing
-              satellite imagery, vessel trajectories, and environmental data.
+              Create a case to register satellite imagery, review geospatial
+              evidence, and document an environmental incident.
             </p>
             <Link href="/new" className="btn-primary inline-flex">
               <Plus className="w-4 h-4" />
-              Start New Investigation
+              Create Case
             </Link>
+            <p className="text-xs text-ocean-muted mt-4">
+              No cases have been created yet.
+            </p>
           </div>
         )}
 

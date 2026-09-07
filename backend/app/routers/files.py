@@ -27,6 +27,16 @@ async def upload_file(
     request: Request,
     file: UploadFile = File(..., description="Data file to upload"),
     file_type: str = Form(..., description="File type: sar|ais|environmental|mask|boundary|other"),
+    product_identifier: str | None = Form(
+        None, description="Sentinel-1 product identifier (e.g. S1A_IW_GRDH_1SDV_...)"
+    ),
+    acquisition_time: str | None = Form(
+        None, description="ISO 8601 acquisition time (timezone required)"
+    ),
+    provenance_source: str | None = Form(
+        None, description="Dataset publisher / source URL / DOI for Sentinel-1 input"
+    ),
+    polarization: str | None = Form(None, description="Polarization, e.g. VV or VH (Sentinel-1)"),
 ):
     """
     Upload and validate a data file for a case.
@@ -37,6 +47,12 @@ async def upload_file(
     - Magic byte signatures
     - Path safety
     - Filename sanitization
+
+    For ``sar`` uploads, optional Sentinel-1 provenance fields (product
+    identifier, acquisition time, source, polarization) are validated and
+    stored. A derived Sentinel-1 GeoTIFF without these fields is still
+    registered, but the map honestly reports that provenance is incomplete
+    instead of claiming verified Sentinel-1 input.
 
     On success, the file is stored and registered with a SHA-256 checksum.
     Temporary upload directories are always removed, on success and failure.
@@ -80,12 +96,47 @@ async def upload_file(
                     )
                 buffer.write(chunk)
 
+        # Optional Sentinel-1 provenance: validate before registration so an
+        # invalid acquisition time is rejected up front, and normalize it to
+        # canonical UTC for storage.
+        extra_metadata = None
+        if file_type == "sar":
+            provenance_errors = file_service.validate_sar_provenance(
+                product_identifier,
+                acquisition_time,
+                provenance_source,
+                polarization,
+            )
+            if provenance_errors:
+                raise HTTPException(
+                    status_code=422,
+                    detail={
+                        "message": "Sentinel-1 provenance validation failed",
+                        "errors": provenance_errors,
+                    },
+                )
+            if acquisition_time:
+                from ..validation import normalize_iso_utc
+
+                acquisition_time = normalize_iso_utc(acquisition_time)
+            extra_metadata = {
+                key: value
+                for key, value in {
+                    "product_identifier": product_identifier,
+                    "acquisition_time": acquisition_time,
+                    "provenance_source": provenance_source,
+                    "polarization": polarization,
+                }.items()
+                if value is not None
+            }
+
         # Validate and register
         result = file_service.register_file(
             case_id=case_id,
             file_path=temp_path,
             original_filename=file.filename,
             file_type=file_type,
+            extra_metadata=extra_metadata,
         )
 
         if result is None:

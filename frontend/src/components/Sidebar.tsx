@@ -83,11 +83,11 @@ export default function Sidebar() {
         })}
       </div>
 
-      {/* Local demo badge */}
+      {/* Local mode badge */}
       <div className="px-5 py-4 border-t border-ocean-deep">
         <div className="flex items-center gap-2 text-xs text-ocean-muted">
           <div className="w-2 h-2 rounded-full bg-ocean-success animate-pulse" />
-          Local Demo Mode
+          Local Mode
         </div>
       </div>
     </aside>

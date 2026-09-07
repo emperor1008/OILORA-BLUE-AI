@@ -130,6 +130,18 @@ def init_database():
         FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE
     );
 
+    -- Map viewports: last analyst viewport per case (safe display preference)
+    CREATE TABLE IF NOT EXISTS map_viewports (
+        case_id TEXT PRIMARY KEY,
+        center_lon REAL,
+        center_lat REAL,
+        zoom REAL,
+        bearing REAL DEFAULT 0,
+        pitch REAL DEFAULT 0,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE
+    );
+
     -- Indexes for performance
     CREATE INDEX IF NOT EXISTS idx_files_case_id ON files(case_id);
     CREATE INDEX IF NOT EXISTS idx_files_file_type ON files(file_type);

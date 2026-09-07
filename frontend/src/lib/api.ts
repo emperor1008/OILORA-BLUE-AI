@@ -5,6 +5,8 @@
  * Uses relative URLs so Next.js rewrites proxy to the backend.
  */
 
+import type { GeoJSONFeatureCollection } from "./geojson";
+
 const API_BASE = "/api";
 
 interface ApiResponse<T = unknown> {
@@ -129,6 +131,27 @@ function extractErrorMessage(errorData: unknown): string | null {
   return null;
 }
 
+/**
+ * Extract field-level validation errors from a FastAPI 422 body.
+ * Returns [{ field, message }] entries suitable for inline form errors.
+ */
+export function fieldErrors(err: unknown): { field: string; message: string }[] {
+  if (!(err instanceof ApiError) || !err.errorData) return [];
+  const d = err.errorData as Record<string, unknown>;
+  const detail = d.detail;
+  if (!Array.isArray(detail)) return [];
+  const out: { field: string; message: string }[] = [];
+  for (const entry of detail) {
+    if (!entry || typeof entry !== "object") continue;
+    const e = entry as Record<string, unknown>;
+    if (typeof e.msg !== "string") continue;
+    const loc = Array.isArray(e.loc) ? e.loc.filter((x) => typeof x === "string") : [];
+    const field = loc.length > 0 ? String(loc[loc.length - 1]) : "form";
+    out.push({ field, message: e.msg });
+  }
+  return out;
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -175,8 +198,10 @@ export function errorRequestId(err: unknown): string | undefined {
 
 // ─── Health ───────────────────────────────────────────────────────────
 
-export async function getHealth(): Promise<ApiResponse<{ version: string }>> {
-  return request("/health");
+export async function getHealth(
+  signal?: AbortSignal,
+): Promise<ApiResponse<{ version: string }>> {
+  return request("/health", signal ? { signal } : {});
 }
 
 export async function getSystemStatus(): Promise<ApiResponse<SystemStatus>> {
@@ -241,14 +266,27 @@ export async function listFiles(
   return request(`/cases/${caseId}/files`);
 }
 
+export interface SarProvenance {
+  product_identifier?: string;
+  acquisition_time?: string;
+  provenance_source?: string;
+  polarization?: string;
+}
+
 export async function uploadFile(
   caseId: string,
   file: File,
   fileType: string,
+  provenance?: SarProvenance,
 ): Promise<ApiResponse<FileInfo>> {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("file_type", fileType);
+  if (provenance && fileType === "sar") {
+    for (const [key, value] of Object.entries(provenance)) {
+      if (value) formData.append(key, value);
+    }
+  }
 
   const url = `${API_BASE}/cases/${caseId}/files`;
   const response = await fetch(url, {
@@ -282,6 +320,215 @@ export async function getFile(
   fileId: string,
 ): Promise<ApiResponse<FileInfo>> {
   return request(`/cases/${caseId}/files/${fileId}`);
+}
+
+// ─── Map workspace types ──────────────────────────────────────────────
+
+export type LayerState =
+  | "ready"
+  | "not_processed"
+  | "missing_input"
+  | "failed"
+  | "coverage_mismatch"
+  | "empty"
+  | "unavailable"
+  | "processing"
+  | "awaiting_review";
+
+export interface MapBounds {
+  min_lat: number;
+  min_lon: number;
+  max_lat: number;
+  max_lon: number;
+}
+
+export interface MapLegendItem {
+  label: string;
+  color: string;
+  fill?: string;
+  dash?: number[];
+  width?: number;
+  symbol?: string;
+}
+
+export interface MapLegend {
+  title?: string;
+  items: MapLegendItem[];
+}
+
+export interface MapLayerInfo {
+  id: string;
+  name: string;
+  category: string;
+  kind: "vector" | "raster";
+  state: LayerState;
+  reason: string;
+  selectable: boolean;
+  timeline: boolean;
+  exportable: boolean;
+  opacity_default: number;
+  min_zoom: number;
+  crs: string;
+  timestamps: { start?: string; end?: string } | null;
+  legend: MapLegend;
+}
+
+export interface MapSummary {
+  case_id: string;
+  case_title: string;
+  region: string;
+  status: string;
+  current_stage: string;
+  bounds: MapBounds | null;
+  time_range: { start: string; end: string } | null;
+  available_layer_ids: string[];
+  pending_layer_ids: string[];
+  unavailable_layer_ids: string[];
+  missing_data: string[];
+  has_geospatial_data: boolean;
+  map_ready: boolean;
+  data_integrity: "ok" | "warning" | "no_data";
+  registered_files: Record<string, number>;
+}
+
+export interface MapLayerFeatureState {
+  layer: string;
+  state: LayerState;
+  reason: string;
+  features: GeoJSONFeatureCollection | null;
+  timestamps: { start?: string; end?: string } | null;
+  crs: string;
+  generated_at: string;
+}
+
+export interface SarOverlay {
+  available: boolean;
+  state: LayerState;
+  reason?: string;
+  /** Granular honest state: uploaded | format_checked | geospatial_validated |
+   * sentinel1_verified | preview_ready | processing_blocked | invalid. */
+  validation_status?: string;
+  file_id?: string | null;
+  source_filename?: string;
+  url?: string | null;
+  bounds?: [number, number, number, number];
+  crs?: string;
+  width?: number;
+  height?: number;
+  band?: number;
+  input_sha256?: string;
+  preview_sha256?: string;
+  generated_at?: string;
+  config?: Record<string, unknown>;
+  acquisition_time?: string | null;
+  polarisation?: string | null;
+  product_identifier?: string | null;
+  provenance_source?: string | null;
+}
+
+export interface ProvenanceSource {
+  file_id: string;
+  file_type: string;
+  original_filename: string;
+  file_size: number;
+  mime_type: string | null;
+  sha256_checksum: string;
+  validation_status: string;
+  registered_at: string;
+  crs: string | null;
+  bounds: MapBounds | null;
+}
+
+export interface DerivedArtifact {
+  artifact: string;
+  file_id?: string;
+  source_filename?: string;
+  input_sha256?: string;
+  sha256_checksum?: string;
+  generated_at?: string;
+  bounds_wsen?: number[];
+  width?: number;
+  height?: number;
+  config?: Record<string, unknown>;
+}
+
+export interface MapProvenance {
+  case_id: string;
+  sources: ProvenanceSource[];
+  derived_artifacts: DerivedArtifact[];
+  note: string;
+}
+
+export interface MapViewport {
+  center_lon: number;
+  center_lat: number;
+  zoom: number;
+  bearing: number;
+  pitch: number;
+}
+
+export interface ViewportResponse {
+  case_id: string;
+  viewport: MapViewport | null;
+  default_viewport: MapViewport | null;
+  bounds: MapBounds | null;
+}
+
+// ─── Map API ───────────────────────────────────────────────────────────
+
+export async function getMapSummary(caseId: string): Promise<ApiResponse<MapSummary>> {
+  return request(`/cases/${caseId}/map/summary`);
+}
+
+export async function getMapLayers(
+  caseId: string,
+): Promise<ApiResponse<{ case_id: string; layers: MapLayerInfo[] }>> {
+  return request(`/cases/${caseId}/map/layers`);
+}
+
+export async function getMapFeatures(
+  caseId: string,
+  layerIds?: string[],
+): Promise<
+  ApiResponse<{ case_id: string; layers: Record<string, MapLayerFeatureState> }>
+> {
+  const query =
+    layerIds && layerIds.length > 0 ? `?layer=${layerIds.join(",")}` : "";
+  return request(`/cases/${caseId}/map/features${query}`);
+}
+
+export async function getMapProvenance(
+  caseId: string,
+): Promise<ApiResponse<MapProvenance>> {
+  return request(`/cases/${caseId}/map/provenance`);
+}
+
+export async function getMapViewport(
+  caseId: string,
+): Promise<ApiResponse<ViewportResponse>> {
+  return request(`/cases/${caseId}/map/viewport`);
+}
+
+export async function saveMapViewport(
+  caseId: string,
+  viewport: {
+    center_lon: number;
+    center_lat: number;
+    zoom: number;
+    bearing?: number;
+    pitch?: number;
+  },
+): Promise<ApiResponse> {
+  return request(`/cases/${caseId}/map/viewport`, {
+    method: "PATCH",
+    body: JSON.stringify(viewport),
+  });
+}
+
+export async function getSarOverlay(
+  caseId: string,
+): Promise<ApiResponse<SarOverlay>> {
+  return request(`/cases/${caseId}/map/sar-overlay`);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────
@@ -334,3 +581,81 @@ export function statusColor(status: string): string {
   };
   return colors[status] || "chip-default";
 }
+
+export function layerStateMeta(state: LayerState): {
+  label: string;
+  chip: string;
+  dot: string;
+} {
+  const meta: Record<
+    LayerState,
+    { label: string; chip: string; dot: string }
+  > = {
+    ready: {
+      label: "Ready",
+      chip: "chip-success",
+      dot: "bg-ocean-success",
+    },
+    processing: {
+      label: "Processing",
+      chip: "chip-warning",
+      dot: "bg-ocean-warning",
+    },
+    awaiting_review: {
+      label: "Awaiting Review",
+      chip: "chip-info",
+      dot: "bg-ocean-teal",
+    },
+    not_processed: {
+      label: "Not Processed",
+      chip: "chip-default",
+      dot: "bg-ocean-muted",
+    },
+    missing_input: {
+      label: "Missing Input",
+      chip: "chip-default",
+      dot: "bg-ocean-muted",
+    },
+    failed: {
+      label: "Failed",
+      chip: "chip-critical",
+      dot: "bg-ocean-critical",
+    },
+    coverage_mismatch: {
+      label: "Coverage Mismatch",
+      chip: "chip-warning",
+      dot: "bg-ocean-warning",
+    },
+    empty: {
+      label: "Empty Result",
+      chip: "chip-default",
+      dot: "bg-ocean-muted",
+    },
+    unavailable: {
+      label: "Unavailable",
+      chip: "chip-default",
+      dot: "bg-ocean-muted",
+    },
+  };
+  return meta[state] || meta.unavailable;
+}
+
+export function formatCoord(value: number, digits = 5): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return "Not available";
+  }
+  return value.toFixed(digits);
+}
+
+export function formatUtc(iso: string | null | undefined): string {
+  if (!iso) return "Not available";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "Not available";
+  return date.toISOString().replace("T", " ").replace(/\.\d{3}Z$/, " UTC");
+}
+
+export function notAvailable(value: unknown): string {
+  if (value === null || value === undefined || value === "") return "Not available";
+  return String(value);
+}
+

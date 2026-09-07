@@ -255,9 +255,19 @@ class FileService:
 
     @classmethod
     def register_file(
-        cls, case_id: str, file_path: str, original_filename: str, file_type: str
+        cls,
+        case_id: str,
+        file_path: str,
+        original_filename: str,
+        file_type: str,
+        extra_metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any] | None:
-        """Register a validated file in the database."""
+        """Register a validated file in the database.
+
+        ``extra_metadata`` (e.g. Sentinel-1 provenance supplied by the analyst)
+        is merged into the stored metadata for later scientific stages. Only
+        whitelisted keys should be passed by the router.
+        """
         # Run validation first
         validation = cls.validate_upload(file_path, original_filename, file_type)
         if not validation["valid"]:
@@ -266,6 +276,8 @@ class FileService:
         file_id = cls.generate_id()
         now = cls.now_iso()
         meta = validation["metadata"]
+        if extra_metadata:
+            meta.update(extra_metadata)
         safe_name = meta["sanitized_filename"]
 
         # Generate stored filename
@@ -335,25 +347,65 @@ class FileService:
                 (dataset_ready, now, case_id),
             )
 
-        return {
-            "id": file_id,
-            "case_id": case_id,
-            "file_type": file_type,
-            "original_filename": original_filename,
-            "stored_filename": stored_filename,
-            "file_path": stored_path,
-            "file_size": meta["file_size"],
-            "mime_type": meta["mime_type"],
-            "sha256_checksum": meta["sha256"],
-            "validation_status": "validated",
-            "validation_errors": validation["errors"],
-            "metadata": meta,
-            "created_at": now,
-        }
+        return cls.to_public_dict(
+            {
+                "id": file_id,
+                "case_id": case_id,
+                "file_type": file_type,
+                "original_filename": original_filename,
+                "stored_filename": stored_filename,
+                "file_path": stored_path,  # stripped by to_public_dict
+                "file_size": meta["file_size"],
+                "mime_type": meta["mime_type"],
+                "sha256_checksum": meta["sha256"],
+                "validation_status": "validated",
+                "validation_errors": validation["errors"],
+                "metadata": meta,
+                "created_at": now,
+            }
+        )
+
+    @staticmethod
+    def validate_sar_provenance(
+        product_identifier: str | None,
+        acquisition_time: str | None,
+        provenance_source: str | None,
+        polarization: str | None,
+    ) -> list[str]:
+        """Validate optional Sentinel-1 provenance fields; returns error list."""
+        from ..validation import normalize_iso_utc
+
+        errors = []
+        for label, value, limit in [
+            ("product_identifier", product_identifier, 200),
+            ("provenance_source", provenance_source, 500),
+            ("polarization", polarization, 20),
+        ]:
+            if value is not None and len(value) > limit:
+                errors.append(f"{label} exceeds {limit} characters")
+        if acquisition_time:
+            try:
+                normalize_iso_utc(acquisition_time)
+            except ValueError as exc:
+                errors.append(f"acquisition_time {exc}")
+        return errors
+
+    @staticmethod
+    def to_public_dict(file_row: dict[str, Any]) -> dict[str, Any]:
+        """
+        Convert a stored file record into a safe public response dict.
+
+        The absolute operating-system file path is never exposed. Only safe
+        identifiers and metadata are returned; `download_available` is an
+        explicit, honest flag (no download endpoint exists yet).
+        """
+        public = {k: v for k, v in file_row.items() if k not in ("file_path",) and v is not None}
+        public["download_available"] = False
+        return public
 
     @classmethod
     def get_case_files(cls, case_id: str) -> list[dict[str, Any]]:
-        """Get all files for a case."""
+        """Get all files for a case (safe public records)."""
         with get_db() as conn:
             rows = conn.execute(
                 "SELECT * FROM files WHERE case_id = ? ORDER BY created_at",
@@ -364,12 +416,12 @@ class FileService:
                 d = dict(row)
                 d["validation_errors"] = json.loads(d.get("validation_errors", "[]"))
                 d["metadata"] = json.loads(d.get("metadata", "{}"))
-                files.append(d)
+                files.append(cls.to_public_dict(d))
             return files
 
     @classmethod
     def get_file(cls, file_id: str) -> dict[str, Any] | None:
-        """Get a single file by ID."""
+        """Get a single file by ID (safe public record)."""
         with get_db() as conn:
             row = conn.execute("SELECT * FROM files WHERE id = ?", (file_id,)).fetchone()
             if row is None:
@@ -377,7 +429,7 @@ class FileService:
             d = dict(row)
             d["validation_errors"] = json.loads(d.get("validation_errors", "[]"))
             d["metadata"] = json.loads(d.get("metadata", "{}"))
-            return d
+            return cls.to_public_dict(d)
 
 
 file_service = FileService()

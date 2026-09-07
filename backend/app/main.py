@@ -16,6 +16,7 @@ from fastapi.responses import JSONResponse
 from .config import settings
 from .database import close_database, init_database
 from .routers import cases, files, health
+from .routers import map as map_routes
 
 # Configure logging
 logging.basicConfig(
@@ -119,6 +120,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(health.router)
 app.include_router(cases.router)
 app.include_router(files.router)
+app.include_router(map_routes.router)
 
 
 # ─── Root endpoint ─────────────────────────────────────────────────────
