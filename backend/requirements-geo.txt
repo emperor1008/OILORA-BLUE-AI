@@ -1,5 +1,15 @@
-# Oilora Blue AI — Phase-2 geospatial runtime (SAR preprocessing, raster IO)
+# Oilora Blue AI — Geospatial runtime (SAR preprocessing, raster IO)
 # Installed on top of requirements.txt when SAR preprocessing starts.
-# Pinned to versions verified importable on the development machine.
-numpy==2.5.2
-rasterio==1.5.1
+#
+# Supported Python: 3.12 — binary wheels for these versions are mature on
+# Windows. Create a clean 3.12 environment before installing:
+#   cd backend && py -3.12 -m venv .venv312
+#   .venv312/Scripts/python.exe -m pip install -r requirements.txt -r requirements-dev.txt -r requirements-geo.txt
+#
+# NOTE: this application detects at runtime whether the native rasterio DLLs
+# actually load. If the OS Application Control policy blocks them (as on the
+# current 3.14 machine), the SAR layer reports "Geospatial raster runtime
+# unavailable" and never claims Ready. Do not disable the policy or copy DLLs
+# manually; move to the supported 3.12 environment instead.
+numpy==2.2.6
+rasterio==1.4.3

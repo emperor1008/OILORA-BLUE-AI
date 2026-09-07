@@ -11,7 +11,18 @@
    ```bash
    cd backend && python -m venv .venv && .venv/Scripts/python.exe -m pip install -r requirements.txt -r requirements-dev.txt
    ```
-   No `.env` file is required — `backend/app/config.py` provides defaults (port 8000, SQLite at `backend/oilora_blue.db`, data dir `data/`).
+   Optional geospatial runtime (enables derived SAR previews from real GeoTIFF uploads):
+   prefer a clean **Python 3.12** environment (`py -3.12 -m venv .venv312`, then
+   `requirements-geo.txt`) — binary wheels are mature there. On this machine the
+   installed Rasterio DLL is blocked by Windows Application Control, so the SAR
+   layer honestly reports the runtime as unavailable; do not bypass the policy.
+   ```bash
+   cd backend && .venv/Scripts/python.exe -m pip install -r requirements-geo.txt
+   ```
+   No `.env` file is required — `backend/app/config.py` provides defaults. The
+   SQLite database is always resolved to `backend/oilora_blue.db` regardless of
+   the working directory (relative `DATABASE_PATH` is anchored at `backend/`);
+   the data dir is `data/`.
 
 ## Run the servers
 
@@ -35,3 +46,6 @@ Manual equivalent:
    ```
    The `next.config.js` rewrite proxies `/api/*` to `http://localhost:8000/api/*`.
 3. Open the frontend URL; the Investigation Dashboard reads real case counts from `/api/cases`.
+
+> **Production build:** never run `npm run build` while the dev server is using
+> the same `.next` directory — stop it first or the dev server's cache breaks.
