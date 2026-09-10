@@ -65,3 +65,7 @@ desktop.ini
 .freebuff/logs/
 .freebuff/*.log
 .freebuff/*.log.err
+.freebuff/
+freebuff/
+.freebuff*
+freebuff*
