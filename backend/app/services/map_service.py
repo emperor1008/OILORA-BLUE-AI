@@ -34,6 +34,7 @@ from .. import config
 from ..database import get_db
 from ..services.case_service import case_service
 from ..services.file_service import FileService
+from . import geo_runtime
 
 logger = logging.getLogger("oilora_blue.map")
 
@@ -633,45 +634,17 @@ class MapService:
 
     _preview_lock = threading.Lock()
 
-    def __init__(self) -> None:
-        # Result of the real rasterio/numpy import probe; cached per process so
-        # the (potentially slow) native import runs at most once. Tests patch
-        # this per instance.
-        self._geo_runtime_cache: dict[str, str] = {}
-
     # ── Geospatial runtime capability ─────────────────────────────────
 
     def _geo_runtime_status(self) -> str:
         """
         Probe whether the optional numpy/rasterio runtime can really be used.
 
-        Returns one of:
-        - "available"     — both imports succeed
-        - "not_installed" — packages are missing from the environment
-        - "import_failed" — packages exist but the native runtime cannot be
-          loaded (e.g. a Windows Application Control policy blocking a DLL)
-
-        ``find_spec`` only proves a package is present on disk; it says nothing
-        about whether native DLLs load, so this probe performs the actual import.
-        Technical detail is logged server-side only — clients receive the safe
-        SAR_RUNTIME_UNAVAILABLE_REASON text instead.
+        Delegates to the shared process-cached probe in ``geo_runtime`` so every
+        service reports the same real capability. The method is kept on the
+        service so tests can patch it per instance.
         """
-        cached = self._geo_runtime_cache.get("status")
-        if cached is not None:
-            return cached
-        try:
-            import numpy  # noqa: F401
-            import rasterio  # noqa: F401
-
-            status = "available"
-        except ModuleNotFoundError:
-            status = "not_installed"
-            logger.warning("Geospatial runtime is not installed (numpy/rasterio).")
-        except Exception as exc:  # noqa: BLE001 - native import failure (e.g. blocked DLL)
-            status = "import_failed"
-            logger.warning("Geospatial runtime import failed: %s", exc)
-        self._geo_runtime_cache["status"] = status
-        return status
+        return geo_runtime.probe_geo_runtime()
 
     def _geo_runtime_available(self) -> bool:
         """True only when the real import probe reports a working runtime."""
@@ -1178,19 +1151,12 @@ class MapService:
                 "file_id": f["id"],
                 "url": None,
             }
-        if validation_status != "preview_ready":
-            return {
-                "available": False,
-                "state": "not_processed",
-                "reason": status_reason,
-                "validation_status": validation_status,
-                "file_id": f["id"],
-                "url": None,
-            }
 
+        # A validated raster without a cached preview is not a terminal state:
+        # derive the preview on demand (windowed reads, cache keyed by input
+        # checksum). If derivation fails, report the failure honestly.
         meta = self._ensure_sar_preview(case_id, f)
         if meta is None:
-            # Preview generation is unavailable/failed; inspect the reason.
             reason = self._sar_preview_failure_reason(case_id, f)
             return {
                 "available": False,

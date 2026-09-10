@@ -1,0 +1,9 @@
+id,open_date,name,location,lat,lon,threat,tags,commodity,measure_skim,measure_shore,measure_bio,measure_disperse,measure_burn,max_ptl_release_gallons,posts,description
+90001,2024-03-15,"SYNTHETIC TEST RECORD — Test Bay Spill","Test Bay Marina, CA, USA",33.05,-117.5,Oil,,Diesel,,,,,,500,2,"SYNTHETIC TEST FIXTURE. This row exists only inside the automated test database to exercise the importer; it is not a real incident."
+90002,2023-11-02,"SYNTHETIC TEST RECORD — Test Harbor Chemical Release","Test Harbor, NJ, USA",40.5,-74.1,Chemical,,Xylene,,,,,,,1,"SYNTHETIC TEST FIXTURE. Chemical category preserved from source."
+90003,2022-06-01,"SYNTHETIC TEST RECORD — Bad Latitude","Nowhere",95.0,-120.0,Oil,,Oil,,,,,,0,"Rejected: latitude out of range."
+90004,,,"Empty Name Bay",10.0,70.0,Oil,,,,,,,,,0,"Rejected: missing name and date."
+90005,2021-01-01,"SYNTHETIC TEST RECORD — Bad Longitude","Elsewhere",20.0,200.0,Oil,,,,,,,,,0,"Rejected: longitude out of range."
+90006,2020-07-07,"SYNTHETIC TEST RECORD — No Location Text","",-5.0,35.0,Oil,,,,,,,,,,0,"SYNTHETIC TEST FIXTURE. No location text; country must stay null."
+90007,2019-09-09,"SYNTHETIC TEST RECORD — Offshore India","Off Chennai Coast, India",14.5,80.2,Oil,,crude oil,,,,,,"1,000",3,"SYNTHETIC TEST FIXTURE. Quantity with thousands separator; country token India."
+90008,2018-04-18,"SYNTHETIC TEST RECORD — No Coordinates","Reported without a position",,,Oil,,,,,,,,,0,"SYNTHETIC TEST FIXTURE. Accepted but never mapped; satellite search unavailable."

@@ -13,9 +13,11 @@
    ```
    Optional geospatial runtime (enables derived SAR previews from real GeoTIFF uploads):
    prefer a clean **Python 3.12** environment (`py -3.12 -m venv .venv312`, then
-   `requirements-geo.txt`) — binary wheels are mature there. On this machine the
-   installed Rasterio DLL is blocked by Windows Application Control, so the SAR
-   layer honestly reports the runtime as unavailable; do not bypass the policy.
+   `requirements-geo.txt`) — binary wheels are mature there. On this machine
+   `rasterio 1.5.1` currently imports successfully in the default `.venv`, so the
+   geospatial tests and derived SAR previews run for real. If Windows Application
+   Control ever blocks the Rasterio DLL again, the SAR layer honestly reports the
+   runtime as unavailable; do not bypass the policy.
    ```bash
    cd backend && .venv/Scripts/python.exe -m pip install -r requirements-geo.txt
    ```

@@ -29,8 +29,9 @@ class Settings(BaseSettings):
     )
     DEBUG: bool = True
 
-    # Server
-    HOST: str = "0.0.0.0"
+    # Server — loopback by default (matches .env.example); bind explicitly to
+    # 0.0.0.0 only when the deployment genuinely requires LAN access.
+    HOST: str = "127.0.0.1"
     PORT: int = 8000
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
@@ -63,10 +64,32 @@ class Settings(BaseSettings):
     ENABLE_LOCAL_DEMO_MODE: bool = True
     LOG_LEVEL: str = "INFO"
 
+    # Provider credentials — backend-only, names declared here so status checks
+    # can report "Authentication required" honestly. Values live in backend/.env
+    # and are never exposed through any API, log line, or frontend bundle.
+    CDSE_CLIENT_ID: str = ""
+    CDSE_CLIENT_SECRET: str = ""
+    COPERNICUS_MARINE_USERNAME: str = ""
+    COPERNICUS_MARINE_PASSWORD: str = ""
+    GFW_API_TOKEN: str = ""
+
+    # Historical-incident import protection: an optional admin key that must be
+    # supplied via the X-Admin-Key header when local demo mode is disabled.
+    NOAA_IMPORT_ADMIN_KEY: str = ""
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
     def model_post_init(self, __context, /) -> None:
         """Derive directory paths and create them if needed."""
+        # Guard against inherited/accidental PORT values (e.g. PORT=0 from an
+        # agent or CI shell) that would make `python app/main.py` bind a random
+        # port. Anything outside the valid TCP range falls back to 8000.
+        if self.PORT < 1 or self.PORT > 65535:
+            logger.warning(
+                "Invalid PORT value %r — falling back to 8000.",
+                self.PORT,
+            )
+            self.PORT = 8000
         # Resolve the database path to an absolute path (single source of truth).
         # Relative values are anchored to the canonical backend base directory so
         # the resolved path never depends on the process current working directory.

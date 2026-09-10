@@ -53,8 +53,9 @@ class CaseService:
                 """INSERT INTO cases (
                     id, title, description, region, incident_time, observation_time,
                     bbox_min_lat, bbox_min_lon, bbox_max_lat, bbox_max_lon,
-                    analyst_notes, status, current_stage, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    analyst_notes, status, current_stage, created_at, updated_at,
+                    historical_incident_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     case_id,
                     data["title"],
@@ -71,6 +72,7 @@ class CaseService:
                     "registration",
                     now,
                     now,
+                    data.get("historical_incident_id"),
                 ),
             )
 

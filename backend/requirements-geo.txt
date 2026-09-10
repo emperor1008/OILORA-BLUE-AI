@@ -5,11 +5,11 @@
 # Windows. Create a clean 3.12 environment before installing:
 #   cd backend && py -3.12 -m venv .venv312
 #   .venv312/Scripts/python.exe -m pip install -r requirements.txt -r requirements-dev.txt -r requirements-geo.txt
-#
-# NOTE: this application detects at runtime whether the native rasterio DLLs
-# actually load. If the OS Application Control policy blocks them (as on the
-# current 3.14 machine), the SAR layer reports "Geospatial raster runtime
-# unavailable" and never claims Ready. Do not disable the policy or copy DLLs
-# manually; move to the supported 3.12 environment instead.
-numpy==2.2.6
-rasterio==1.4.3
+##   NOTE: this application detects at runtime whether the native rasterio DLLs
+#   actually load. If the OS Application Control policy ever blocks them, the
+#   SAR layer reports "Geospatial raster runtime unavailable" and never claims
+#   Ready. Do not disable the policy or copy DLLs manually; move to the
+#   supported 3.12 environment instead. The pins below are the versions
+#   verified on the development machine (Python 3.14.6, rasterio imports OK).
+numpy==2.5.2
+rasterio==1.5.1

@@ -32,6 +32,9 @@ class CaseCreate(BaseModel):
     bbox_max_lat: float | None = Field(None, ge=-90, le=90)
     bbox_max_lon: float | None = Field(None, ge=-180, le=180)
     analyst_notes: str = Field(default="", max_length=5000, description="Analyst notes")
+    historical_incident_id: str | None = Field(
+        None, description="Optional link to the historical incident this case derives from"
+    )
 
     @field_validator("incident_time", "observation_time")
     @classmethod

@@ -45,6 +45,10 @@ Two envelopes are used, both always carrying `X-Request-ID`:
 | POST | `/api/cases/{id}/files` | multipart `file` + `file_type` + optional SAR provenance (`product_identifier`, `acquisition_time` (tz-aware ISO), `provenance_source`, `polarization`) | `BaseResponse{data:FileInfo}` | 201; validated + SHA-256. SAR provenance stored in `metadata`; a derived GeoTIFF without provenance is never reported as verified Sentinel-1 |
 | GET | `/api/cases/{id}/files` | — | `BaseResponse{data:[FileInfo]}` | registered files |
 | GET | `/api/cases/{id}/files/{fid}` | — | `BaseResponse{data:FileInfo}` | single file |
+| GET | `/api/cases/{id}/files/{fid}/manifest` | — | `BaseResponse{data:FileManifest}` | provenance manifest for a registered file (Gate 1): manifest id, source mapping, provider, product identifier, acquisition window, original + stored filename, byte size, SHA-256, media format, CRS/bounds/bands when readable, granular `validation_status`, validation messages, software version. Never contains filesystem paths |
+| GET | `/api/sources` | — | `BaseResponse{data:[SourceInfo]}` | official provider registry (Gate 1): six seeded sources with honest `configured_status` — `connected` only after a successful real probe; `authentication_required` when credentials are absent; `not_verified` before any probe; `local_file_workflow` for file-based sources. Credential values never appear — only masked `authentication_configured: bool` |
+| GET | `/api/sources/{id}` | — | `BaseResponse{data:SourceInfo}` | single registry source |
+| POST | `/api/sources/{id}/test` | — | `BaseResponse{data:SourceInfo}` | real, time-limited connectivity probe (8 s timeout, 5 s cooldown). Credential-gated sources without credentials report `authentication_required` without network activity; local-file sources report `local_file_workflow`; results persist (`last_successful_access`, `last_failed_access`, error category) |
 | GET | `/api/cases/{id}/map/summary` | — | `BaseResponse{data:MapSummary}` | genuine map readiness: bounds, time range, per-layer availability, integrity |
 | GET | `/api/cases/{id}/map/layers` | — | `BaseResponse{data:{layers:[MapLayerInfo]}}` | typed layer registry with honest states + reasons |
 | GET | `/api/cases/{id}/map/features` | `?layer=a,b` (default: all vector) | `BaseResponse{data:{layers:{id:FeatureState}}}` | GeoJSON for genuine layers; typed non-ready states otherwise |
@@ -60,10 +64,19 @@ OpenAPI: `/api/openapi.json`, docs UI at `/api/docs`.
 case detail `files`) is sanitized. The absolute OS path (`file_path`) is **never** returned.
 Safe fields: `id`, `case_id`, `file_type`, `original_filename`, `stored_filename`,
 `file_size`, `mime_type`, `sha256_checksum`, `validation_status`, `validation_errors`,
-`metadata`, `created_at`, and `download_available` (always `false` until an authenticated,
-case-isolated download endpoint exists). SAR files additionally expose their provenance
-in `metadata` (`product_identifier`, `acquisition_time`, `provenance_source`, `polarization`)
-and their granular state via the map layer registry / `sar-overlay` endpoint.
+`metadata`, `created_at`, `manifest_id`, and `download_available` (always `false` until an
+authenticated, case-isolated download endpoint exists). SAR files additionally expose
+their provenance in `metadata` (`product_identifier`, `acquisition_time`,
+`provenance_source`, `polarization`) and their granular state via the map layer
+registry / `sar-overlay` endpoint.
+
+**Manifest validation vocabulary (per-file, distinct from the map layer state):**
+`uploaded` / `format_checked` / `geospatial_validated` / `source_verified` /
+`processing_ready` / `derived` / `rejected` / `processing_blocked`. SAR manifests are
+derived from the real runtime: rasterio unavailable → `processing_blocked`;
+unreadable/non-georeferenced raster → `rejected`; readable raster →
+`geospatial_validated`; readable + declared Sentinel-1 provenance → `source_verified`
+(declared only — content-level product verification is a later gate).
 
 **Case validation rules (create + patch):**
 

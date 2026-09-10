@@ -5,7 +5,7 @@
  * Uses relative URLs so Next.js rewrites proxy to the backend.
  */
 
-import type { GeoJSONFeatureCollection } from "./geojson";
+import type { GeoJSONFeature, GeoJSONFeatureCollection } from "./geojson";
 
 const API_BASE = "/api";
 
@@ -529,6 +529,322 @@ export async function getSarOverlay(
   caseId: string,
 ): Promise<ApiResponse<SarOverlay>> {
   return request(`/cases/${caseId}/map/sar-overlay`);
+}
+
+// ─── Data source registry (Gate 1) ────────────────────────────────────
+
+export type SourceStatus =
+  | "connected"
+  | "authentication_required"
+  | "source_unavailable"
+  | "not_configured"
+  | "local_file_workflow"
+  | "not_verified";
+
+export interface SourceInfo {
+  source_id: string;
+  source_name: string;
+  organization: string;
+  data_category: string;
+  documentation_url: string;
+  access_method: string;
+  authentication_required: boolean;
+  /** Masked credential status — values never leave the backend. */
+  authentication_configured: boolean;
+  authentication_note: string;
+  licence: string;
+  spatial_coverage: string;
+  temporal_coverage: string;
+  refresh_frequency: string;
+  expected_format: string;
+  configured_status: SourceStatus;
+  latest_error_category: string;
+  last_successful_access: string | null;
+  last_failed_access: string | null;
+  last_probe_at: string | null;
+}
+
+export interface FileManifest {
+  manifest_id: string;
+  case_id: string;
+  file_id: string;
+  source_id: string | null;
+  source_type: string | null;
+  provider: string | null;
+  product_identifier: string | null;
+  acquisition_start: string | null;
+  acquisition_end: string | null;
+  registered_at: string;
+  original_filename: string;
+  stored_filename: string;
+  byte_size: number;
+  sha256_checksum: string;
+  media_format: string | null;
+  crs: string | null;
+  spatial_bounds: Record<string, number> | null;
+  temporal_bounds: Record<string, string> | null;
+  bands: Record<string, unknown>[] | null;
+  validation_status: string;
+  validation_messages: string[];
+  processing_version: string;
+  software_version: string | null;
+  created_by: string;
+  created_at: string;
+}
+
+export async function listSources(): Promise<ApiResponse<SourceInfo[]>> {
+  return request("/sources");
+}
+
+export async function getSource(sourceId: string): Promise<ApiResponse<SourceInfo>> {
+  return request(`/sources/${sourceId}`);
+}
+
+export async function testSource(sourceId: string): Promise<ApiResponse<SourceInfo>> {
+  return request(`/sources/${sourceId}/test`, { method: "POST" });
+}
+
+export async function getFileManifest(
+  caseId: string,
+  fileId: string,
+): Promise<ApiResponse<FileManifest>> {
+  return request(`/cases/${caseId}/files/${fileId}/manifest`);
+}
+
+// ─── Historical incident explorer ─────────────────────────────────────
+
+export interface HistoricalIncidentSummary {
+  id: string;
+  canonical_name: string;
+  incident_category: string | null;
+  verification_status: string;
+  start_time_utc: string | null;
+  time_precision: string;
+  country: string | null;
+  location_description: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  coordinate_accuracy: string | null;
+  location_method: string | null;
+  source_id: string;
+  substance_name: string | null;
+  satellite_status: string;
+  satellite_match_count: number;
+}
+
+export interface HistoricalSource {
+  id: string;
+  incident_id: string;
+  organization: string;
+  source_title: string | null;
+  source_url: string | null;
+  publication_date: string | null;
+  accessed_at: string;
+  source_type: string | null;
+  licence_or_usage_note: string | null;
+  source_quality: string | null;
+}
+
+export interface HistoricalFieldProvenanceEntry {
+  field_name: string;
+  source_value: string | null;
+  normalization_method: string | null;
+  confidence_level: string | null;
+  curator_note: string | null;
+  organization: string;
+  source_url: string | null;
+  source_title: string | null;
+}
+
+export interface HistoricalSatelliteMatch {
+  id: string;
+  item_id: string;
+  product_identifier: string | null;
+  platform: string | null;
+  collection: string;
+  acquisition_start: string | null;
+  acquisition_end: string | null;
+  acquisition_mode: string | null;
+  processing_level: string | null;
+  polarizations: string[];
+  orbit_direction: string | null;
+  metadata_url: string | null;
+  asset_access_status: string;
+  temporal_distance_hours: number | null;
+}
+
+export interface HistoricalIncidentDetail extends HistoricalIncidentSummary {
+  end_time_utc: string | null;
+  maritime_region: string | null;
+  nearest_port: string | null;
+  affected_area_geometry_geojson: unknown;
+  substance_category: string | null;
+  quantity_min: number | null;
+  quantity_max: number | null;
+  quantity_unit: string | null;
+  quantity_status: string | null;
+  reported_cause: string | null;
+  summary: string | null;
+  response_status: string | null;
+  original_payload: Record<string, unknown>;
+  sources: HistoricalSource[];
+  field_provenance: Record<string, HistoricalFieldProvenanceEntry[]>;
+  vessels: Record<string, unknown>[];
+  impacts: Record<string, unknown>[];
+  responses: Record<string, unknown>[];
+  satellite_matches: HistoricalSatelliteMatch[];
+  satellite_summary: {
+    available: boolean;
+    reason: string | null;
+    match_count: number;
+    nearest: Record<string, unknown> | null;
+  } | null;
+  linked_cases: { id: string; title: string; created_at: string }[];
+}
+
+export interface HistoricalOptions {
+  categories: string[];
+  countries: string[];
+  sources: { id: string; name: string }[];
+  year_min: string | null;
+  year_max: string | null;
+}
+
+export interface HistoricalListData extends ApiResponse<HistoricalIncidentSummary[]> {
+  total: number;
+  limit: number;
+  offset: number;
+  next_cursor: string | null;
+}
+
+export interface HistoricalMapResponse {
+  type: "FeatureCollection";
+  features: GeoJSONFeature[];
+}
+
+export interface IncidentFilters {
+  search?: string;
+  country?: string;
+  category?: string;
+  source?: string;
+  start_date?: string;
+  end_date?: string;
+  satellite_status?: string;
+  sort?: string;
+}
+
+export interface SatelliteSearchResult {
+  status: string;
+  message: string;
+  matches: {
+    item_id: string;
+    product_identifier: string;
+    platform: string;
+    acquisition_start: string | null;
+    acquisition_end: string | null;
+    acquisition_mode: string;
+    processing_level: string;
+    polarizations: string[];
+    orbit_direction: string | null;
+    temporal_distance_hours: number | null;
+    metadata_url: string | null;
+    asset_access_status: string;
+  }[];
+  match_count: number;
+  provider: string;
+  search_bbox?: number[];
+  window_days: number;
+  searched_at: string;
+  access_note: string;
+  documentation_url: string;
+  warning?: string;
+  satellite_summary?: {
+    available: boolean;
+    reason: string | null;
+    match_count: number;
+    nearest: Record<string, unknown> | null;
+  };
+}
+
+function toQuery(params: Record<string, string | number | undefined>): string {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== "") search.set(key, String(value));
+  }
+  const qs = search.toString();
+  return qs ? `?${qs}` : "";
+}
+
+export async function listHistoricalIncidents(
+  filters: IncidentFilters & {
+    limit?: number;
+    offset?: number;
+    cursor?: string | null;
+  } = {},
+): Promise<HistoricalListData> {
+  return request(
+    `/historical-incidents${toQuery({
+      search: filters.search,
+      country: filters.country,
+      category: filters.category,
+      source: filters.source,
+      start_date: filters.start_date,
+      end_date: filters.end_date,
+      satellite_status: filters.satellite_status,
+      sort: filters.sort,
+      limit: filters.limit,
+      offset: filters.offset,
+      cursor: filters.cursor ?? undefined,
+    })}`,
+  );
+}
+
+export async function getHistoricalIncident(
+  incidentId: string,
+): Promise<ApiResponse<HistoricalIncidentDetail>> {
+  return request(`/historical-incidents/${incidentId}`);
+}
+
+export async function getHistoricalOptions(): Promise<ApiResponse<HistoricalOptions>> {
+  return request("/historical-incidents/options");
+}
+
+export async function getHistoricalMapIncidents(bounds: {
+  west: number;
+  south: number;
+  east: number;
+  north: number;
+}): Promise<ApiResponse<HistoricalMapResponse>> {
+  return request(
+    `/historical-incidents/map?west=${bounds.west}&south=${bounds.south}&east=${bounds.east}&north=${bounds.north}`,
+  );
+}
+
+export async function satelliteSearchIncident(
+  incidentId: string,
+  params: {
+    window_days?: number;
+    polarization?: string;
+    limit?: number;
+  } = {},
+): Promise<ApiResponse<SatelliteSearchResult>> {
+  return request(
+    `/historical-incidents/${incidentId}/satellite-search${toQuery({
+      window_days: params.window_days,
+      polarization: params.polarization,
+      limit: params.limit,
+    })}`,
+  );
+}
+
+export async function createInvestigationFromIncident(
+  incidentId: string,
+  analystNotes = "",
+): Promise<ApiResponse<CaseDetail>> {
+  return request(`/historical-incidents/${incidentId}/create-investigation`, {
+    method: "POST",
+    body: JSON.stringify({ confirm: true, analyst_notes: analystNotes }),
+  });
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────

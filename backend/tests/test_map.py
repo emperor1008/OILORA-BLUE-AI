@@ -521,7 +521,11 @@ class TestGeoRuntimeDegradation:
 
         overlay = client.get(f"/api/cases/{case_id}/map/sar-overlay").json()["data"]
         assert overlay["available"] is False
-        assert overlay["state"] == "not_processed"
+        # Preview generation is attempted on demand for validated rasters; the
+        # fake TIFF bytes cannot be read by the real runtime, so the overlay
+        # reports unavailable — it can never reach ready.
+        assert overlay["state"] == "unavailable"
+        assert "preview generation failed" in overlay["reason"]
 
     def test_invalid_raster_reported_failed(self, client, monkeypatch):
         """A registered raster that cannot be read is failed, not ready."""

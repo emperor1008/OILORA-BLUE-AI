@@ -11,6 +11,7 @@ import {
   errorRequestId,
   fieldErrors,
 } from "@/lib/api";
+import { validateBoundingBox } from "@/lib/bbox";
 
 /**
  * Convert a stored UTC ISO timestamp to the value expected by a
@@ -50,6 +51,16 @@ export default function NewCasePage() {
       return;
     }
 
+    const bboxErrors = validateBoundingBox(form);
+    if (bboxErrors.length > 0) {
+      setError(
+        "Geographic bounds are invalid: " +
+          bboxErrors.map((b) => b.message).join(" "),
+      );
+      setFieldErrorList(bboxErrors);
+      return;
+    }
+
     try {
       setSubmitting(true);
       setError(null);
@@ -74,6 +85,8 @@ export default function NewCasePage() {
   ) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
+
+
 
   return (
     <AppShell>

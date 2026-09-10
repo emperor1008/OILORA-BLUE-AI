@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Plus, Activity, Anchor } from "lucide-react";
+import {
+  LayoutDashboard,
+  Plus,
+  Activity,
+  Anchor,
+  Database,
+  Landmark,
+} from "lucide-react";
 import { clsx } from "clsx";
 
 const navigation = [
@@ -11,6 +18,8 @@ const navigation = [
 ];
 
 const secondaryNav = [
+  { name: "Historical Incidents", href: "/historical-incidents", icon: Landmark },
+  { name: "Data Sources", href: "/sources", icon: Database },
   { name: "System Status", href: "/status", icon: Activity },
 ];
 

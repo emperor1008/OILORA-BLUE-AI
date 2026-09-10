@@ -321,6 +321,9 @@ export default function MaritimeMap({
     if (!supported || !containerRef.current) return;
     let disposed = false;
     let maplibregl: typeof import("maplibre-gl") | null = null;
+    // A basemap switch removes and recreates the map; until the fresh map
+    // fires `load`, dependent effects must not touch the (unloaded) style.
+    setStyleLoaded(false);
 
     (async () => {
       try {
