@@ -62,8 +62,7 @@ export function resolveBasemap(
   }
   return {
     url:
-      process.env.NEXT_PUBLIC_BASEMAP_STYLE_URL ||
-      "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+      "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
     attribution: OCEAN_ATTRIBUTION,
     background: "#CBDDE5",
     maxZoom: BASEMAP_MAX_ZOOM.ocean,
@@ -99,7 +98,7 @@ interface MaritimeMapProps {
   isOffline?: boolean;
 }
 
-const OCEAN_ATTRIBUTION = "© OpenStreetMap contributors © CARTO";
+const OCEAN_ATTRIBUTION = "© OpenStreetMap contributors";
 
 /** True when a WebGL rendering context can be created in this browser. */
 function webglSupported(): boolean {
