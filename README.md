@@ -14,7 +14,7 @@ require human verification.
 
 ---
 
-## 1. The problem in plain English
+## 1. The problem 
 
 When a possible oil slick is spotted in satellite radar imagery, an analyst needs to answer:
 where might the oil have come from, when might it have been released, and which vessels were
