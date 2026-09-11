@@ -22,7 +22,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   CircleLayerSpecification,
-  FilterSpecification,
   GeoJSONSource,
   LayerSpecification,
   Map,
@@ -60,6 +59,7 @@ export type MapRuntimeState =
   | "initialization_error";
 
 const CLUSTER_CENTER: [number, number] = [70, 20];
+const SELECTED_LAYER_ID = "incident-selected";
 const GLYPHS_URL = "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf";
 
 // ─── WebGL detection (browser only, called inside effects) ─────────────
@@ -132,13 +132,12 @@ export default function HistoricalMap({
   onApi,
 }: HistoricalMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<Map | null>(null);
-  const flyToRef = useRef<HistoricalMapApi | null>(null);
+  const [mapReady, setMapReady] = useState(false);
+  const onApiRef = useRef(onApi);
+  useEffect(() => { onApiRef.current = onApi; }, [onApi]);
   // Deterministic initial value: no browser checks during rendering.
   const [runtimeState, setRuntimeState] = useState<MapRuntimeState>("hydrating");
   const initRef = useRef<ReturnType<typeof createInitEffect> | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  void initRef;
 
   const base = useMemo(
     () => resolveBasemap(basemapId, isOffline),
@@ -163,21 +162,23 @@ export default function HistoricalMap({
   // ── Expose the imperative API once the map is ready ───────────────────
   const setApi = useCallback(
     (api: HistoricalMapApi) => {
-      flyToRef.current = api;
-      onApi?.(api);
+      setMapReady(true);
+      onApiRef.current?.(api);
     },
-    [onApi],
+    [],
   );
 
   // ── Map creation + style lifecycle ─────────────────────────────────────
   useEffect(() => {
     if (runtimeState !== "supported" || !containerRef.current) return;
+    setMapReady(false);
     if (initRef.current) initRef.current.tearDown();
     initRef.current = createInitEffect({
       container: containerRef.current,
       base,
       externalTiles: Boolean(base.url),
       setApi,
+      onError: () => setRuntimeState("initialization_error"),
     });
     return () => {
       initRef.current?.tearDown();
@@ -185,21 +186,13 @@ export default function HistoricalMap({
     };
   }, [runtimeState, base, setApi]);
 
-  // Expose API after the map loads.
-  useEffect(() => {
-    if (!initRef.current) return;
-    const currentApi = initRef.current.api;
-    if (currentApi) setApi(currentApi);
-  }, [initRef, setApi]);
-
   // ── Feature sourcing + interaction listeners (stable map, re-applied) ─
   useEffect(() => {
     const init = initRef.current;
-    if (!init || init.state !== "ready") return;
+    if (!mapReady || !init || init.state !== "ready") return;
 
     const map = init.map;
     if (map === null) return;
-    const externalTiles = Boolean(base.url);
 
     const clusterLayer: CircleLayerSpecification = {
       id: "cluster-count",
@@ -271,10 +264,9 @@ export default function HistoricalMap({
       },
     };
     const selectedLayer: CircleLayerSpecification = {
-      id: "incident-selected",
+      id: SELECTED_LAYER_ID,
       type: "circle",
-      source: "incidents",
-      filter: ["all", ["==", "$id", "__none__"]],
+      source: "selected-incident",
       paint: {
         "circle-color": "#EF5B5B",
         "circle-radius": 11,
@@ -302,7 +294,6 @@ export default function HistoricalMap({
         if (externalTilesLocal) map.addLayer(clusterLabelLayer);
         map.addLayer(incidentPointLayer);
         if (externalTilesLocal) map.addLayer(incidentLabelLayer);
-        map.addLayer(selectedLayer);
       }
     };
 
@@ -317,11 +308,20 @@ export default function HistoricalMap({
       }
     }
 
-    const selectedFilter: FilterSpecification = [
-      "all",
-      ["==", "$id", selectedId ?? "__none__"],
-    ];
-    map.setFilter("incident_selected", selectedFilter);
+    // Keep the selected point separate so clustering cannot hide it.
+    const selectedData = {
+      type: "FeatureCollection" as const,
+      features: features.features.filter((feature) =>
+        selectedId != null && (feature.id === selectedId || feature.properties?.incident_id === selectedId)
+      ),
+    };
+    const selectedSource = map.getSource<GeoJSONSource>("selected-incident");
+    if (selectedSource) {
+      selectedSource.setData(selectedData as Parameters<GeoJSONSource["setData"]>[0]);
+    } else {
+      map.addSource("selected-incident", { type: "geojson", data: selectedData as Parameters<GeoJSONSource["setData"]>[0] });
+      map.addLayer(selectedLayer);
+    }
 
     const onClickCluster = (event: MapLayerMouseEvent) => {
       const hit = map.queryRenderedFeatures(event.point, {
@@ -366,7 +366,7 @@ export default function HistoricalMap({
       map.off("mouseenter", "incident-point", pointerCursor);
       map.off("mouseleave", "incident-point", defaultCursor);
     };
-  }, [features, selectedId, onSelect]);
+  }, [features, selectedId, onSelect, mapReady, base.url]);
 
   // ─── Render surface ────────────────────────────────────────────────────
   if (runtimeState === "hydrating") return <HydratingSkeleton />;
@@ -404,12 +404,6 @@ export default function HistoricalMap({
 
 // ─── Map init (module-level logic, never evaluated during render) ───────
 
-interface InitState {
-  state: "loading" | "ready" | "error";
-  map: Map | null;
-  api: HistoricalMapApi | null;
-}
-
 interface InitHandle {
   get state(): "loading" | "ready" | "error";
   get map(): Map | null;
@@ -422,6 +416,7 @@ function createInitEffect(args: {
   base: ReturnType<typeof resolveBasemap>;
   externalTiles: boolean;
   setApi: (api: HistoricalMapApi) => void;
+  onError: () => void;
 }): InitHandle {
   let state: "loading" | "ready" | "error" = "loading";
   let map: Map | null = null;
@@ -432,10 +427,8 @@ function createInitEffect(args: {
     let maplibreglModule: typeof import("maplibre-gl") | null = null;
     try {
       maplibreglModule = await import("maplibre-gl");
-    } catch {
-      // If the module cannot be loaded (e.g. offline) the effect is
-      // intentionally silent; the component decides what to render.
-      return;
+    } catch (error) {
+      throw error;
     }
     if (cancelled || !maplibreglModule) return;
 
@@ -491,11 +484,11 @@ function createInitEffect(args: {
 
     mapInst.on("load", () => {
       if (cancelled) return;
-      const api: HistoricalMapApi = {
+      api = {
         flyTo: (lon, lat, zoom = 8) => {
-          mapInst.flyTo({ center: [lon, lat], zoom, essential: true });
+          if (!cancelled) mapInst.flyTo({ center: [lon, lat], zoom, essential: true });
         },
-        resetNorth: () => mapInst.resetNorth(),
+        resetNorth: () => { if (!cancelled) mapInst.resetNorth(); },
       };
       map = mapInst;
       state = "ready";
@@ -503,7 +496,12 @@ function createInitEffect(args: {
     });
 
     map = mapInst;
-  })();
+  })().catch(() => {
+    if (!cancelled) {
+      state = "error";
+      args.onError();
+    }
+  });
 
   const tearDown = () => {
     cancelled = true;

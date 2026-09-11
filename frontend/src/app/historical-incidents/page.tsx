@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
@@ -97,7 +97,8 @@ function HistoricalIncidentsExplorer() {
   const [detail, setDetail] = useState<HistoricalIncidentDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
-  const mapApiRef = useRef<HistoricalMapApi | null>(null);
+  const [mapApi, setMapApi] = useState<HistoricalMapApi | null>(null);
+  const handleMapApi = useCallback((api: HistoricalMapApi) => setMapApi(api), []);
 
   // Load filter options once.
   useEffect(() => {
@@ -251,9 +252,9 @@ function HistoricalIncidentsExplorer() {
   // Move the map to the selected incident's exact stored coordinates.
   useEffect(() => {
     if (detail?.latitude != null && detail.longitude != null) {
-      mapApiRef.current?.flyTo(detail.longitude, detail.latitude, 8);
+      mapApi?.flyTo(detail.longitude, detail.latitude, 8);
     }
-  }, [detail?.latitude, detail?.longitude]);
+  }, [mapApi, detail?.latitude, detail?.longitude]);
 
   const resetFilters = () => {
     setSearch("");
@@ -312,9 +313,7 @@ function HistoricalIncidentsExplorer() {
               basemapId={basemapId}
               selectedId={selectedId}
               onSelect={selectIncident}
-              onApi={(api) => {
-                mapApiRef.current = api;
-              }}
+              onApi={handleMapApi}
             />
             {incidents && incidents.length > 0 && (
               <button
