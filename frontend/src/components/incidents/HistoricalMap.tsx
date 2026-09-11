@@ -100,10 +100,22 @@ function UnavailableSkeleton() {
       role="status"
       aria-label="Interactive map unavailable"
     >
-      <p className="text-sm text-ocean-muted max-w-md text-center">
-        Interactive map is unavailable because this browser does not support
-        WebGL. Incidents remain fully browsable in the incident list.
-      </p>
+      <div
+        className="flex items-center justify-center text-center"
+        data-testid="historical-map-unsupported"
+      >
+        <div className="max-w-md">
+          <p className="text-sm text-ocean-muted">
+            Interactive map is unavailable because this browser does not support
+            WebGL. Incidents remain fully browsable in the incident list.
+          </p>
+          <div className="sr-only" role="status" aria-live="polite" data-testid="map-sr-note">
+            Map of verified historical incidents. Use the incident list below as an
+            accessible alternative. Marker colour is not the only indicator;
+            location accuracy is also shown in the list.
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -147,15 +159,15 @@ export default function HistoricalMap({
   // ── Resolve WebGL support once, client-side, after hydration ──────────
   useEffect(() => {
     let cancelled = false;
-
-    const supported = detectWebGLSupport();
-
-    if (!cancelled) {
+    const timeoutId = window.setTimeout(() => {
+      if (cancelled) return;
+      const supported = detectWebGLSupport();
       setRuntimeState(supported ? "supported" : "unsupported");
-    }
+    }, 0);
 
     return () => {
       cancelled = true;
+      window.clearTimeout(timeoutId);
     };
   }, []);
 
